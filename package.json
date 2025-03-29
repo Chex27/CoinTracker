@@ -2,6 +2,7 @@
   "name": "cointracker",
   "version": "1.0.0",
   "dependencies": {
+    "axios": "^1.8.4",
     "express": "^4.21.2"
   }
 }
