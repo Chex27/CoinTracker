@@ -1,5 +1,8 @@
 let currentPage = 1;
 let priceChart;
+let currentCoinId;
+let currentCoinName;
+let currentRange = '1y'; // Default range
 
 // Load Coins into Table
 function loadCoins() {
@@ -7,11 +10,12 @@ function loadCoins() {
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector("#crypto-table tbody");
-      tbody.innerHTML = ""; // clear before reload
+      tbody.innerHTML = ""; // Clear before reload
       data.forEach(coin => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><img src="https://cryptoicons.org/api/icon/${coin.symbol.toLowerCase()}" width="20" height="20" alt="${coin.symbol}">${coin.name}</td>
+          <td><img src="${coin.image}" alt="${coin.name}" width="30" height="30"></td> <!-- Coin Image -->
+          <td onclick="showChart('${coin.id}', '${coin.name}')">${coin.name}</td>
           <td>${coin.symbol.toUpperCase()}</td>
           <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">$${coin.current_price}</td>
           <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">${coin.change_1h?.toFixed(2)}%</td>
@@ -22,7 +26,6 @@ function loadCoins() {
           <td>${coin.circulating_supply?.toLocaleString()}</td>
           <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button></td>
           <td><canvas class="sparkline" id="spark-${coin.id}"></canvas></td>
-          <td><button onclick="showChart('${coin.id}', '${coin.name}')">View Chart</button></td>
         `;
         tbody.appendChild(row);
 
@@ -37,12 +40,13 @@ function loadCoins() {
       });
     });
 }
-// Function for search
+
+// Search Functionality for coins
 document.getElementById('search-box').addEventListener('input', function(e) {
   const query = e.target.value.toLowerCase();
   const rows = document.querySelectorAll('#crypto-table tbody tr');
   rows.forEach(row => {
-    const coinName = row.querySelector('td').innerText.toLowerCase();
+    const coinName = row.querySelector('td:nth-child(2)').innerText.toLowerCase(); // Search in the name column
     if (coinName.includes(query)) {
       row.style.display = '';
     } else {
@@ -50,7 +54,6 @@ document.getElementById('search-box').addEventListener('input', function(e) {
     }
   });
 });
-
 
 // Load More Coins (Pagination)
 function loadMore() {
@@ -160,7 +163,6 @@ function loadCryptoNews() {
       document.getElementById('news-list').innerHTML = '<p>Failed to load news, please try again later.</p>';
     });
 }
-
 
 // Call functions on page load
 window.onload = () => {
