@@ -28,3 +28,11 @@ function setAlert(id, name, price) {
   if (target) localStorage.setItem(`alert-${id}`, target);
 }
 window.onload = loadCoins;
+const ctx = document.getElementById(`spark-${coin.id}`);
+if (ctx && coin.sparkline_in_7d?.price) {
+  Sparkline.draw(ctx, coin.sparkline_in_7d.price, {
+    lineColor: "#00f0ff",
+    startColor: "transparent",
+    endColor: "transparent"
+  });
+}
