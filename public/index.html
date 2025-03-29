@@ -254,5 +254,50 @@
     <script src="/main.js" defer></script>
 
 </body>
+<!-- Hamburger Menu -->
+<div class="hamburger-menu">
+  <button onclick="toggleMenu()">☰</button>
+  <div id="menu" style="display:none;">
+    <a href="/login">Login</a>
+    <a href="/register">Create Account</a>
+    <a href="/sms-login">Login with SMS</a>
+    <a href="/google-login">Login with Google</a>
+  </div>
+</div>
+
+<style>
+  .hamburger-menu button {
+    font-size: 30px;
+    color: white;
+    background: transparent;
+    border: none;
+  }
+
+  #menu {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+  }
+
+  #menu a {
+    padding: 10px;
+    text-decoration: none;
+    color: white;
+    background-color: #333;
+    margin-bottom: 10px;
+    border-radius: 5px;
+  }
+
+  #menu a:hover {
+    background-color: #444;
+  }
+</style>
+
+<script>
+  function toggleMenu() {
+    const menu = document.getElementById('menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+</script>
 
 </html>

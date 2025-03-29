@@ -11,7 +11,7 @@ function loadCoins() {
       data.forEach(coin => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td onclick="showChart('${coin.id}', '${coin.name}')">${coin.name}</td>
+          <td><img src="https://cryptoicons.org/api/icon/${coin.symbol.toLowerCase()}" width="20" height="20" alt="${coin.symbol}">${coin.name}</td>
           <td>${coin.symbol.toUpperCase()}</td>
           <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">$${coin.current_price}</td>
           <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">${coin.change_1h?.toFixed(2)}%</td>
@@ -22,6 +22,7 @@ function loadCoins() {
           <td>${coin.circulating_supply?.toLocaleString()}</td>
           <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button></td>
           <td><canvas class="sparkline" id="spark-${coin.id}"></canvas></td>
+          <td><button onclick="showChart('${coin.id}', '${coin.name}')">View Chart</button></td>
         `;
         tbody.appendChild(row);
 
@@ -36,6 +37,20 @@ function loadCoins() {
       });
     });
 }
+// Function for search
+document.getElementById('search-box').addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll('#crypto-table tbody tr');
+  rows.forEach(row => {
+    const coinName = row.querySelector('td').innerText.toLowerCase();
+    if (coinName.includes(query)) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
 
 // Load More Coins (Pagination)
 function loadMore() {
@@ -112,9 +127,9 @@ function loadChart(range) {
     });
 }
 
-// Fetch Latest Crypto News
+// Fetch latest crypto news using the provided API key
 function loadCryptoNews() {
-  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac';  // Your API key
+  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac'; // Your API key here
   const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
 
   fetch(url)
@@ -145,6 +160,7 @@ function loadCryptoNews() {
       document.getElementById('news-list').innerHTML = '<p>Failed to load news, please try again later.</p>';
     });
 }
+
 
 // Call functions on page load
 window.onload = () => {
