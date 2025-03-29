@@ -1,4 +1,11 @@
-type: web
-name: cointracker
-buildCommand: npm install
-startCommand: node server.js
+services:
+  - type: web
+    name: cointracker
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    branch: main
+    region: oregon
+    runtime: node
+    rootDir: .
