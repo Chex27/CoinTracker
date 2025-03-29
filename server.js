@@ -2,12 +2,80 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const session = require('express-session');
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Use bodyParser middleware to parse request bodies (for handling POST data like login)
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// Fetch market prices
+// Set up session middleware
+app.use(session({
+  secret: 'your-secret-key',  // Use a strong, random key in production
+  resave: false,
+  saveUninitialized: false
+}));
+
+// Initialize passport
+app.use(passport.initialize());
+app.use(passport.session());  // Enable session support for passport
+
+// Your database or in-memory user data
+const users = [{ id: 1, username: 'user', password: 'password' }];
+
+// Local strategy (username and password)
+passport.use(new LocalStrategy(
+  function(username, password, done) {
+    const user = users.find(u => u.username === username);
+    if (!user) {
+      return done(null, false, { message: 'Incorrect username.' });
+    }
+    if (user.password !== password) {
+      return done(null, false, { message: 'Incorrect password.' });
+    }
+    return done(null, user);
+  }
+));
+
+// Serialize and deserialize user for session storage
+passport.serializeUser(function(user, done) {
+  done(null, user.id);  // Save user ID in session
+});
+
+passport.deserializeUser(function(id, done) {
+  const user = users.find(u => u.id === id);
+  done(null, user);  // Retrieve user object from session
+});
+
+// Example login route
+app.post('/login', 
+  passport.authenticate('local', { failureRedirect: '/' }), // Use local strategy
+  (req, res) => {
+    res.redirect('/dashboard');  // Redirect to dashboard on successful login
+  }
+);
+
+// Example route to show the dashboard (after successful login)
+app.get('/dashboard', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.redirect('/');  // Redirect to login if not authenticated
+  }
+  res.send(`<h1>Welcome ${req.user.username}</h1>`);
+});
+
+// Example logout route
+app.get('/logout', (req, res) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    res.redirect('/');  // Redirect to home page after logout
+  });
+});
+
+// Fetch market prices from CoinGecko API
 app.get('/api/prices', async (req, res) => {
   const page = req.query.page || 1;
   try {
@@ -66,4 +134,10 @@ app.get('/api/chart/:coinId', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Serve static files (e.g., for frontend)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

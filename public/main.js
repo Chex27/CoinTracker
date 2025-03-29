@@ -1,5 +1,7 @@
 let currentPage = 1;
+let priceChart;
 
+// Load Coins into Table
 function loadCoins() {
   fetch(`/api/prices?page=${currentPage}`)
     .then(res => res.json())
@@ -35,74 +37,13 @@ function loadCoins() {
     });
 }
 
+// Load More Coins (Pagination)
 function loadMore() {
   currentPage++;
   loadCoins();
 }
-function loadChart(range) {
-  currentRange = range;
-  const url = `/api/chart/${currentCoinId}?range=${currentRange}&type=line`;
 
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      if (!data || !Array.isArray(data.prices || data)) {
-        alert("No chart data available.");
-        return;
-      }
-
-      if (priceChart) priceChart.destroy();  // Destroy any previous chart
-
-      const ctx = document.getElementById("priceChart").getContext("2d");
-
-      const config = {
-        type: 'line',  // Chart type: 'line' or 'candlestick'
-        data: {
-          labels: data.prices.map(p => p[0]),  // X-axis timestamps
-          datasets: [{
-            label: `${currentCoinName} Price (USD)`,
-            data: data.prices.map(p => ({ x: p[0], y: p[1] })),  // Y-axis price
-            borderColor: "#00eaff",  // Line color
-            backgroundColor: "rgba(0, 234, 255, 0.3)",  // Fill color
-            fill: true,
-            tension: 0.3  // Smooth line
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              type: 'time',
-              time: { unit: 'minute' },
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
-            },
-            y: {
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
-            }
-          }
-        }
-      };
-
-      priceChart = new Chart(ctx, config);  // Create new chart
-    })
-    .catch(err => alert("Failed to load chart data"));
-}
-
-function setAlert(id, name, price) {
-  const target = prompt(`Set alert for ${name} (current: $${price})`);
-  if (target) {
-    localStorage.setItem(`alert-${id}`, target);
-    alert(`Alert set for ${name} at $${target}`);
-  }
-}
-
-// optional global handler if you're using chart modal
-function showChart(id, name) {
-  console.log(`Show chart for ${name} (${id})`);
-  // implement chart logic/modal
-}
+// Show the Chart Modal
 function showChart(coinId, coinName) {
   currentCoinId = coinId;
   currentCoinName = coinName;
@@ -112,15 +53,15 @@ function showChart(coinId, coinName) {
   loadChart(currentRange);
 }
 
-window.onload = () => {
-  loadCoins();
-  setInterval(loadCoins, 60000); // auto-refresh every 60s
-};
-let priceChart;
+// Close the Chart Modal
+function closeChart() {
+  document.getElementById("chartModal").style.display = "none";
+}
 
+// Load Chart Data
 function loadChart(range) {
   currentRange = range;
-  const url = `/api/chart/${currentCoinId}?range=${currentRange}&type=line`; // Make sure this API URL is correct
+  const url = `/api/chart/${currentCoinId}?range=${currentRange}`;
 
   fetch(url)
     .then(res => res.json())
@@ -130,12 +71,11 @@ function loadChart(range) {
         return;
       }
 
-      if (priceChart) priceChart.destroy(); // Destroy any previous chart
+      if (priceChart) priceChart.destroy(); // Destroy previous chart if exists
 
       const ctx = document.getElementById("priceChart").getContext("2d");
-
       const config = {
-        type: 'line',  // Can change to 'candlestick' if needed
+        type: 'line',  // You can change this to 'candlestick' if desired
         data: {
           labels: data.prices.map(p => p[0]), // X-axis timestamps
           datasets: [{
@@ -164,10 +104,60 @@ function loadChart(range) {
         }
       };
 
-      priceChart = new Chart(ctx, config); // Create new chart
+      priceChart = new Chart(ctx, config); // Create a new chart
     })
     .catch(err => {
       console.error("Error loading chart data:", err);
       alert("Failed to load chart data.");
     });
+}
+
+// Fetch Latest Crypto News
+function loadCryptoNews() {
+  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac';  // Your API key
+  const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const newsList = document.getElementById('news-list');
+      newsList.innerHTML = ''; // Clear previous news
+
+      if (data.status === 'ok') {
+        data.articles.forEach(article => {
+          const newsItem = document.createElement('div');
+          newsItem.classList.add('news-item');
+          newsItem.innerHTML = `
+            <a href="${article.url}" target="_blank">
+              <h4>${article.title}</h4>
+              <p>${article.description}</p>
+              <span>Source: ${article.source.name}</span>
+            </a>
+          `;
+          newsList.appendChild(newsItem);
+        });
+      } else {
+        newsList.innerHTML = '<p>Failed to load news, please try again later.</p>';
+      }
+    })
+    .catch(err => {
+      console.error('Error fetching news:', err);
+      document.getElementById('news-list').innerHTML = '<p>Failed to load news, please try again later.</p>';
+    });
+}
+
+// Call functions on page load
+window.onload = () => {
+  loadCoins();
+  loadCryptoNews();  // Load crypto news
+  setInterval(loadCoins, 60000); // auto-refresh every 60s
+};
+
+// Set price alert
+function setAlert(id, name, price) {
+  const target = prompt(`Set alert for ${name} (current: $${price})`);
+  if (target) {
+    localStorage.setItem(`alert-${id}`, target);
+    alert(`Alert set for ${name} at $${target}`);
+  }
 }
