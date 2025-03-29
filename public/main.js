@@ -116,3 +116,58 @@ window.onload = () => {
   loadCoins();
   setInterval(loadCoins, 60000); // auto-refresh every 60s
 };
+let priceChart;
+
+function loadChart(range) {
+  currentRange = range;
+  const url = `/api/chart/${currentCoinId}?range=${currentRange}&type=line`; // Make sure this API URL is correct
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (!data || !Array.isArray(data.prices || data)) {
+        alert("No chart data available.");
+        return;
+      }
+
+      if (priceChart) priceChart.destroy(); // Destroy any previous chart
+
+      const ctx = document.getElementById("priceChart").getContext("2d");
+
+      const config = {
+        type: 'line',  // Can change to 'candlestick' if needed
+        data: {
+          labels: data.prices.map(p => p[0]), // X-axis timestamps
+          datasets: [{
+            label: `${currentCoinName} Price (USD)`,
+            data: data.prices.map(p => ({ x: p[0], y: p[1] })), // Y-axis price
+            borderColor: "#00eaff",  // Line color
+            backgroundColor: "rgba(0, 234, 255, 0.3)",  // Fill color
+            fill: true,
+            tension: 0.3  // Smooth line
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'minute' },
+              ticks: { color: "#fff" },
+              grid: { color: "#333" }
+            },
+            y: {
+              ticks: { color: "#fff" },
+              grid: { color: "#333" }
+            }
+          }
+        }
+      };
+
+      priceChart = new Chart(ctx, config); // Create new chart
+    })
+    .catch(err => {
+      console.error("Error loading chart data:", err);
+      alert("Failed to load chart data.");
+    });
+}
