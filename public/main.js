@@ -14,19 +14,19 @@ function loadCoins() {
       data.forEach(coin => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><img src="${coin.image}" alt="${coin.name}" width="30" height="30"></td> <!-- Coin Image -->
-          <td onclick="showChart('${coin.id}', '${coin.name}')">${coin.name}</td>
-          <td>${coin.symbol.toUpperCase()}</td>
-          <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">$${coin.current_price}</td>
-          <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">${coin.change_1h?.toFixed(2)}%</td>
-          <td class="${coin.change_24h > 0 ? 'text-success' : 'text-danger'}">${coin.change_24h?.toFixed(2)}%</td>
-          <td class="${coin.change_7d > 0 ? 'text-success' : 'text-danger'}">${coin.change_7d?.toFixed(2)}%</td>
-          <td>$${coin.market_cap?.toLocaleString()}</td>
-          <td>$${coin.total_volume?.toLocaleString()}</td>
-          <td>${coin.circulating_supply?.toLocaleString()}</td>
-          <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button></td>
-          <td><canvas class="sparkline" id="spark-${coin.id}"></canvas></td>
-        `;
+        <td><img src="${coin.image}" alt="${coin.name}" width="30" height="30"></td> <!-- Coin Image -->
+        <td onclick="showChart('${coin.id}', '${coin.name}')">${coin.name}</td>
+        <td>${coin.symbol.toUpperCase()}</td>
+        <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">$${coin.current_price}</td>
+        <td class="${coin.change_1h > 0 ? 'text-success' : 'text-danger'}">${coin.change_1h?.toFixed(2)}%</td>
+        <td class="${coin.change_24h > 0 ? 'text-success' : 'text-danger'}">${coin.change_24h?.toFixed(2)}%</td>
+        <td class="${coin.change_7d > 0 ? 'text-success' : 'text-danger'}">${coin.change_7d?.toFixed(2)}%</td>
+        <td>$${coin.market_cap?.toLocaleString()}</td>
+        <td>$${coin.total_volume?.toLocaleString()}</td>
+        <td>${coin.circulating_supply?.toLocaleString()}</td>
+        <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button></td>
+        <td><canvas class="sparkline" id="spark-${coin.id}"></canvas></td>
+      `;          
         tbody.appendChild(row);
 
         const ctx = document.getElementById(`spark-${coin.id}`);
@@ -130,10 +130,10 @@ function loadChart(range) {
     });
 }
 
-// Fetch latest crypto news using the provided API key
+// Fetch latest crypto news using your CoinGecko API key
 function loadCryptoNews() {
-  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac'; // Your API key here
-  const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
+  const apiKey = 'CG-SVDdWKzqpzHTcNrLPbQWHqpP'; // Your CoinGecko API key
+  const url = `https://pro-api.coingecko.com/api/v3/coins/{id}/news?x_cg_pro_api_key=${apiKey}`;
 
   fetch(url)
     .then(res => res.json())
@@ -141,15 +141,15 @@ function loadCryptoNews() {
       const newsList = document.getElementById('news-list');
       newsList.innerHTML = ''; // Clear previous news
 
-      if (data.status === 'ok') {
-        data.articles.forEach(article => {
+      if (data && data.length > 0) {
+        data.forEach(article => {
           const newsItem = document.createElement('div');
           newsItem.classList.add('news-item');
           newsItem.innerHTML = `
             <a href="${article.url}" target="_blank">
               <h4>${article.title}</h4>
               <p>${article.description}</p>
-              <span>Source: ${article.source.name}</span>
+              <span>Source: ${article.source}</span>
             </a>
           `;
           newsList.appendChild(newsItem);
@@ -164,12 +164,13 @@ function loadCryptoNews() {
     });
 }
 
-// Call functions on page load
+// Call the function to load crypto news on page load
 window.onload = () => {
   loadCoins();
   loadCryptoNews();  // Load crypto news
   setInterval(loadCoins, 60000); // auto-refresh every 60s
 };
+
 
 // Set price alert
 function setAlert(id, name, price) {
