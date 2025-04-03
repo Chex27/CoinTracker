@@ -24,7 +24,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());  // Enable session support for passport
 
-// Your database or in-memory user data
+// Your in-memory user data (can be replaced by DB later)
 const users = [{ id: 1, username: 'user', password: 'password' }];
 
 // Local strategy (username and password)
@@ -101,7 +101,8 @@ app.get('/api/prices', async (req, res) => {
       change_1h: c.price_change_percentage_1h_in_currency,
       change_24h: c.price_change_percentage_24h_in_currency,
       change_7d: c.price_change_percentage_7d_in_currency,
-      sparkline_in_7d: c.sparkline_in_7d
+      sparkline_in_7d: c.sparkline_in_7d,
+      image: c.image // Added image URL to API response
     }));
     res.json(formatted);
   } catch (e) {
@@ -131,6 +132,19 @@ app.get('/api/chart/:coinId', async (req, res) => {
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: "failed to fetch chart data" });
+  }
+});
+
+// Fetch latest crypto news using the provided API key
+app.get('/api/news', async (req, res) => {
+  const apiKey = process.env.NEWS_API_KEY;
+  const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
+
+  try {
+    const { data } = await axios.get(url);
+    res.json(data.articles);
+  } catch (e) {
+    res.status(500).json({ error: "failed to fetch news" });
   }
 });
 
