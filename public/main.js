@@ -131,9 +131,10 @@ function loadChart(range) {
 }
 
 // Fetch latest crypto news using your CoinGecko API key
+// Fetch latest crypto news using NewsAPI (or another working API service)
 function loadCryptoNews() {
-  const apiKey = 'CG-SVDdWKzqpzHTcNrLPbQWHqpP'; // Your CoinGecko API key
-  const url = `https://pro-api.coingecko.com/api/v3/coins/{id}/news?x_cg_pro_api_key=${apiKey}`;
+  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac'; // Your CoinGecko API key
+  const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
 
   fetch(url)
     .then(res => res.json())
@@ -141,21 +142,21 @@ function loadCryptoNews() {
       const newsList = document.getElementById('news-list');
       newsList.innerHTML = ''; // Clear previous news
 
-      if (data && data.length > 0) {
-        data.forEach(article => {
+      if (data.status === 'ok' && data.articles.length > 0) {
+        data.articles.forEach(article => {
           const newsItem = document.createElement('div');
           newsItem.classList.add('news-item');
           newsItem.innerHTML = `
             <a href="${article.url}" target="_blank">
               <h4>${article.title}</h4>
               <p>${article.description}</p>
-              <span>Source: ${article.source}</span>
+              <span>Source: ${article.source.name}</span>
             </a>
           `;
           newsList.appendChild(newsItem);
         });
       } else {
-        newsList.innerHTML = '<p>Failed to load news, please try again later.</p>';
+        newsList.innerHTML = '<p>No news available. Please try again later.</p>';
       }
     })
     .catch(err => {
