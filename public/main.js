@@ -70,13 +70,6 @@ function showChart(coinId, coinName) {
   document.getElementById("chartTitle").innerText = `${coinName} | Price Chart`;
   loadChart(currentRange);
 }
-
-// Close the Chart Modal
-function closeChart() {
-  document.getElementById("chartModal").style.display = "none";
-}
-
-// Load Chart Data
 function loadChart(range) {
   currentRange = range;
   const url = `/api/chart/${currentCoinId}?range=${currentRange}`;
@@ -84,6 +77,8 @@ function loadChart(range) {
   fetch(url)
     .then(res => res.json())
     .then(data => {
+      console.log(data);  // Check if the data is logged in the console
+
       if (!data || !Array.isArray(data.prices || data)) {
         alert("No chart data available.");
         return;
@@ -99,8 +94,8 @@ function loadChart(range) {
           datasets: [{
             label: `${currentCoinName} Price (USD)`,
             data: data.prices.map(p => ({ x: p[0], y: p[1] })), // Y-axis price
-            borderColor: "#00eaff",  // Line color
-            backgroundColor: "rgba(0, 234, 255, 0.3)",  // Fill color
+            borderColor: "#00eaff",  
+            backgroundColor: "rgba(0, 234, 255, 0.3)",  
             fill: true,
             tension: 0.3  // Smooth line
           }]
@@ -130,9 +125,13 @@ function loadChart(range) {
     });
 }
 
-// Fetch latest crypto news using your CoinGecko API key
+// Close the Chart Modal
+function closeChart() {
+  document.getElementById("chartModal").style.display = "none";
+}
+
 function loadCryptoNews() {
-  const apiKey = 'CG-SVDdWKzqpzHTcNrLPbQWHqpP'; // Your CoinGecko API key
+  const apiKey = 'YOUR_NEWS_API_KEY';  // Replace with a working API key for news
   const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
 
   fetch(url)
