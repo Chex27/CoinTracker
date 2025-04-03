@@ -131,9 +131,8 @@ function loadChart(range) {
 }
 
 // Fetch latest crypto news using your CoinGecko API key
-// Fetch latest crypto news using NewsAPI (or another working API service)
 function loadCryptoNews() {
-  const apiKey = '6ce572114c4b4bcd975d66e5913e67ac'; // Your CoinGecko API key
+  const apiKey = 'CG-SVDdWKzqpzHTcNrLPbQWHqpP'; // Your CoinGecko API key
   const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
 
   fetch(url)
@@ -171,7 +170,6 @@ window.onload = () => {
   loadCryptoNews();  // Load crypto news
   setInterval(loadCoins, 60000); // auto-refresh every 60s
 };
-
 
 // Set price alert
 function setAlert(id, name, price) {
