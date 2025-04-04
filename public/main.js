@@ -88,16 +88,16 @@ function loadChart(range) {
 
       const ctx = document.getElementById("priceChart").getContext("2d");
       const config = {
-        type: 'line',  // You can change this to 'candlestick' if desired
+        type: 'line',
         data: {
-          labels: data.prices.map(p => p[0]), // X-axis timestamps
+          labels: data.prices.map(p => new Date(p[0])), // 🟢 Correct time formatting
           datasets: [{
             label: `${currentCoinName} Price (USD)`,
-            data: data.prices.map(p => ({ x: p[0], y: p[1] })), // Y-axis price
-            borderColor: "#00eaff",  
-            backgroundColor: "rgba(0, 234, 255, 0.3)",  
+            data: data.prices.map(p => ({ x: new Date(p[0]), y: p[1] })), // 🟢 Chart.js time format
+            borderColor: "#00eaff",
+            backgroundColor: "rgba(0, 234, 255, 0.3)",
             fill: true,
-            tension: 0.3  // Smooth line
+            tension: 0.3
           }]
         },
         options: {
@@ -105,7 +105,14 @@ function loadChart(range) {
           scales: {
             x: {
               type: 'time',
-              time: { unit: 'minute' },
+              time: {
+                tooltipFormat: 'MMM dd',
+                displayFormats: {
+                  day: 'MMM dd',
+                  month: 'MMM yyyy',
+                  year: 'yyyy'
+                }
+              },
               ticks: { color: "#fff" },
               grid: { color: "#333" }
             },
@@ -115,7 +122,8 @@ function loadChart(range) {
             }
           }
         }
-      };
+        
+      };      
 
       priceChart = new Chart(ctx, config); // Create a new chart
     })

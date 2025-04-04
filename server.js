@@ -19,6 +19,20 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+// ===== Routes =====
+
+// Login page
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Dashboard (protected)
+app.get('/dashboard', (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.redirect('/login');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Initialize passport
 app.use(passport.initialize());
