@@ -118,6 +118,11 @@
       text-align: center;
     }
 
+    #priceChart {
+      width: 100% !important;
+      height: 90vh !important;
+    }
+
     canvas {
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
@@ -219,24 +224,21 @@
 <body>
   <h1 class="text-center text-warning mb-4">CoinTracker Dashboard</h1>
   <div class="container">
-
     <!-- Modal for chart -->
     <div id="chartModal" style="display:none;">
       <h3 id="chartTitle"></h3>
-
-      <!-- ✅ Chart Range Buttons -->
       <div class="chart-range-buttons">
-        <button onclick="loadChart('1d')">1D</button>
-        <button onclick="loadChart('7d')">7D</button>
-        <button onclick="loadChart('30d')">1M</button>
-        <button onclick="loadChart('90d')">3M</button>
-        <button onclick="loadChart('1y')">1Y</button>
+        <button onclick="loadChart('1')">1D</button>
+        <button onclick="loadChart('7')">7D</button>
+        <button onclick="loadChart('30')">1M</button>
+        <button onclick="loadChart('90')">3M</button>
+        <button onclick="loadChart('365')">1Y</button>
         <button onclick="loadChart('max')">ALL</button>
+        <button onclick="toggleChartType()">Toggle Candlestick</button>
         <button onclick="toggleFullScreenChart()">Fullscreen</button>
         <button class="close-btn" onclick="closeChart()">Close</button>
       </div>
-
-      <canvas id="priceChart" width="1000" height="500"></canvas>
+      <canvas id="priceChart"></canvas>
     </div>
 
     <!-- Search bar -->
@@ -288,7 +290,6 @@
   <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <script src="/main.js"></script>
-
   <script>
     function toggleMenu() {
       const menu = document.getElementById('menu');
