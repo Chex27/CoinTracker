@@ -5,7 +5,8 @@ let currentPage = 1;
 let priceChart;
 let currentCoinId;
 let currentCoinName;
-let currentRange = '1y'; // Default chart range
+let currentRange = '365'; // default to 1 year
+let isCandlestick = false; // Toggle mode
 
 function loadCoins() {
   fetch(`/api/prices?page=${currentPage}`)
@@ -46,9 +47,15 @@ function loadCoins() {
 function showChart(coinId, coinName) {
   currentCoinId = coinId;
   currentCoinName = coinName;
-  currentRange = '1y';
+  currentRange = '365';
+  isCandlestick = false;
   document.getElementById("chartModal").style.display = "block";
   document.getElementById("chartTitle").innerText = `${coinName} | Price Chart`;
+  loadChart(currentRange);
+}
+
+function toggleChartType() {
+  isCandlestick = !isCandlestick;
   loadChart(currentRange);
 }
 
@@ -65,47 +72,87 @@ function loadChart(range) {
       }
 
       if (priceChart) priceChart.destroy();
-
       const ctx = document.getElementById("priceChart").getContext("2d");
 
-      const formattedData = data.prices.map(([time, price]) => ({ x: new Date(time), y: price }));
+      const labels = data.prices.map(p => new Date(p[0]));
 
-      priceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets: [{
-            label: `${currentCoinName} Price (USD)`,
-            data: formattedData,
-            borderColor: "#00eaff",
-            backgroundColor: "rgba(0, 234, 255, 0.3)",
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: {
-              type: 'time',
-              time: {
-                unit: 'day',
-                tooltipFormat: 'MMM dd',
-                displayFormats: {
-                  day: 'MMM dd',
-                  month: 'MMM yyyy',
-                  year: 'yyyy'
-                }
-              },
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
+      const chartConfig = isCandlestick
+        ? {
+            type: 'candlestick',
+            data: {
+              datasets: [{
+                label: `${currentCoinName} OHLC`,
+                data: data.prices.map(([time, price]) => ({
+                  x: new Date(time),
+                  o: price,
+                  h: price * 1.02,
+                  l: price * 0.98,
+                  c: price
+                })),
+                borderColor: "#00eaff"
+              }]
             },
-            y: {
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
+            options: {
+              responsive: true,
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    tooltipFormat: 'MMM dd',
+                    displayFormats: {
+                      day: 'MMM dd',
+                      month: 'MMM yyyy',
+                      year: 'yyyy'
+                    }
+                  },
+                  ticks: { color: "#fff" },
+                  grid: { color: "#333" }
+                },
+                y: {
+                  ticks: { color: "#fff" },
+                  grid: { color: "#333" }
+                }
+              }
             }
           }
-        }
-      });
+        : {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: `${currentCoinName} Price (USD)`,
+                data: data.prices.map(p => ({ x: new Date(p[0]), y: p[1] })),
+                borderColor: "#00eaff",
+                backgroundColor: "rgba(0, 234, 255, 0.3)",
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                x: {
+                  type: 'time',
+                  time: {
+                    tooltipFormat: 'MMM dd',
+                    displayFormats: {
+                      day: 'MMM dd',
+                      month: 'MMM yyyy',
+                      year: 'yyyy'
+                    }
+                  },
+                  ticks: { color: "#fff" },
+                  grid: { color: "#333" }
+                },
+                y: {
+                  ticks: { color: "#fff" },
+                  grid: { color: "#333" }
+                }
+              }
+            }
+          };
+
+      priceChart = new Chart(ctx, chartConfig);
     })
     .catch(err => {
       console.error("Error loading chart data:", err);
@@ -149,5 +196,5 @@ window.onload = () => {
 };
 
 function loadCryptoNews() {
-  // Skip since you're not using News API
-}  
+  // Skipped
+}
