@@ -1,5 +1,70 @@
 const express = require('express');
 const axios = require('axios');
+const path = require('path');
+require('dotenv').config();
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const session = require('express-session');
+const bodyParser = require('body-parser');
+
+const app = express(); // ✅ Initialize 'app' BEFORE any app.use or app.get
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: false
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// In-memory user (replace with DB later)
+const users = [{ id: 1, username: 'user', password: 'password' }];
+
+passport.use(new LocalStrategy((username, password, done) => {
+  const user = users.find(u => u.username === username);
+  if (!user || user.password !== password) {
+    return done(null, false, { message: 'Invalid credentials.' });
+  }
+  return done(null, user);
+}));
+
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser((id, done) => {
+  const user = users.find(u => u.id === id);
+  done(null, user);
+});
+
+// Auth routes
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+
+app.post('/login', passport.authenticate('local', {
+  failureRedirect: '/login'
+}), (req, res) => {
+  res.redirect('/dashboard');
+});
+
+app.get('/dashboard', (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/logout', (req, res, next) => {
+  req.logout(err => {
+    if (err) return next(err);
+    res.redirect('/');
+  });
+});
+
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// === API Routes ===
 
 app.get('/api/fear-greed', async (req, res) => {
   try {
@@ -11,96 +76,6 @@ app.get('/api/fear-greed', async (req, res) => {
   }
 });
 
-const path = require('path');
-require('dotenv').config();
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Use bodyParser middleware to parse request bodies (for handling POST data like login)
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-// Set up session middleware
-app.use(session({
-  secret: 'your-secret-key',  // Use a strong, random key in production
-  resave: false,
-  saveUninitialized: false
-}));
-// ===== Routes =====
-
-// Login page
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// Dashboard (protected)
-app.get('/dashboard', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.redirect('/login');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Initialize passport
-app.use(passport.initialize());
-app.use(passport.session());  // Enable session support for passport
-
-// Your in-memory user data (can be replaced by DB later)
-const users = [{ id: 1, username: 'user', password: 'password' }];
-
-// Local strategy (username and password)
-passport.use(new LocalStrategy(
-  function(username, password, done) {
-    const user = users.find(u => u.username === username);
-    if (!user) {
-      return done(null, false, { message: 'Incorrect username.' });
-    }
-    if (user.password !== password) {
-      return done(null, false, { message: 'Incorrect password.' });
-    }
-    return done(null, user);
-  }
-));
-
-// Serialize and deserialize user for session storage
-passport.serializeUser(function(user, done) {
-  done(null, user.id);  // Save user ID in session
-});
-
-passport.deserializeUser(function(id, done) {
-  const user = users.find(u => u.id === id);
-  done(null, user);  // Retrieve user object from session
-});
-
-// Example login route
-app.post('/login', 
-  passport.authenticate('local', { failureRedirect: '/' }), // Use local strategy
-  (req, res) => {
-    res.redirect('/dashboard');  // Redirect to dashboard on successful login
-  }
-);
-
-// Example route to show the dashboard (after successful login)
-app.get('/dashboard', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.redirect('/');  // Redirect to login if not authenticated
-  }
-  res.send(`<h1>Welcome ${req.user.username}</h1>`);
-});
-
-// Example logout route
-app.get('/logout', (req, res) => {
-  req.logout((err) => {
-    if (err) return next(err);
-    res.redirect('/');  // Redirect to home page after logout
-  });
-});
-
-// Fetch market prices from CoinGecko API
 app.get('/api/prices', async (req, res) => {
   const page = req.query.page || 1;
   try {
@@ -110,7 +85,7 @@ app.get('/api/prices', async (req, res) => {
         order: 'market_cap_desc',
         per_page: 25,
         page,
-        sparkline: false,
+        sparkline: true,
         price_change_percentage: '1h,24h,7d',
         x_cg_pro_api_key: process.env.COINGECKO_KEY
       }
@@ -127,7 +102,7 @@ app.get('/api/prices', async (req, res) => {
       change_24h: c.price_change_percentage_24h_in_currency,
       change_7d: c.price_change_percentage_7d_in_currency,
       sparkline_in_7d: c.sparkline_in_7d,
-      image: c.image // Added image URL to API response
+      image: c.image
     }));
     res.json(formatted);
   } catch (e) {
@@ -139,23 +114,22 @@ app.get('/api/chart/:coinId', async (req, res) => {
   const { coinId } = req.params;
   const { range } = req.query;
 
-  let days = 365; // default
-  if (range === '1d') days = 1;
-  else if (range === '7d') days = 7;
-  else if (range === '30d') days = 30;
-  else if (range === '90d') days = 90;
+  let days = '365';
+  if (range === '1d') days = '1';
+  else if (range === '7d') days = '7';
+  else if (range === '30d') days = '30';
+  else if (range === '90d') days = '90';
   else if (range === 'max') days = 'max';
 
   try {
     const { data } = await axios.get(`https://pro-api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
       params: {
         vs_currency: 'usd',
-        days: days,
-        interval: range === '1d' ? 'hourly' : 'daily', // better resolution for 1d
+        days,
+        interval: range === '1d' ? 'hourly' : 'daily',
         x_cg_pro_api_key: process.env.COINGECKO_KEY
       }
     });
-
     res.json(data);
   } catch (e) {
     console.error(e);
@@ -163,22 +137,15 @@ app.get('/api/chart/:coinId', async (req, res) => {
   }
 });
 
-
-// Fetch latest crypto news using the provided API key
 app.get('/api/news', async (req, res) => {
-  const apiKey = process.env.NEWS_API_KEY;
-  const url = `https://newsapi.org/v2/everything?q=crypto&apiKey=${apiKey}`;
-
   try {
-    const { data } = await axios.get(url);
+    const { data } = await axios.get(`https://newsapi.org/v2/everything?q=crypto&apiKey=${process.env.NEWS_API_KEY}`);
     res.json(data.articles);
   } catch (e) {
     res.status(500).json({ error: "failed to fetch news" });
   }
 });
 
-// Serve static files (e.g., for frontend)
-app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/altcoin-season', async (req, res) => {
   try {
     const { data } = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/altcoin-season', {
@@ -191,7 +158,7 @@ app.get('/api/altcoin-season', async (req, res) => {
   }
 });
 
-// Start the server
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
