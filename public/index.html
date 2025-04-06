@@ -219,10 +219,169 @@
     #menu a:hover {
       background-color: #444;
     }
+    .sparkline {
+  width: 120px;
+  height: 30px;
+  margin: 0 auto;
+  display: block;
+}
+#stats-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 20px;
+}
+
+.stat-card {
+  background-color: #1f2633;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.stat-change {
+  font-size: 1rem;
+  color: #f87171;
+}
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge span {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fcd34d;
+}
+
+#fearLabel {
+  font-size: 1rem;
+  margin-top: 5px;
+}
+
+.alt-season-bar {
+  height: 10px;
+  width: 100%;
+  background: linear-gradient(to right, orange 50%, blue 50%);
+  border-radius: 10px;
+  position: relative;
+  margin-top: 5px;
+}
+
+#bitcoinDot {
+  position: absolute;
+  top: -6px;
+  left: 16%; /* default placement */
+  width: 10px;
+  height: 10px;
+  background: black;
+  border-radius: 50%;
+}
+
+.hamburger-menu {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge span {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fcd34d;
+}
+
+#fearLabel {
+  font-size: 1rem;
+  margin-top: 5px;
+}
+
+.alt-season-bar {
+  height: 10px;
+  width: 100%;
+  background: linear-gradient(to right, orange 50%, blue 50%);
+  border-radius: 10px;
+  position: relative;
+  margin-top: 5px;
+}
+
+#bitcoinDot {
+  position: absolute;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  background: black;
+  border-radius: 50%;
+}
+
   </style>
 </head>
 <body>
   <h1 class="text-center text-warning mb-4">CoinTracker Dashboard</h1>
+  <div id="stats-panel">
+    <div class="stat-card">
+      <h4>Market Cap</h4>
+      <p class="stat-value" id="marketCap">$--</p>
+      <p class="stat-change" id="marketCapChange">--%</p>
+      <canvas id="marketCapSpark" width="120" height="30"></canvas>
+    </div>
+    <div class="stat-card">
+      <h4>CMC100</h4>
+      <p class="stat-value" id="cmc100">$--</p>
+      <p class="stat-change" id="cmc100Change">--%</p>
+      <canvas id="cmc100Spark" width="120" height="30"></canvas>
+    </div>
+    <div class="stat-card">
+      <h4>Fear &amp; Greed</h4>
+      <div class="gauge">
+        <span id="fearValue">--</span>
+        <p id="fearLabel">--</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <h4>Altcoin Season</h4>
+      <p><span id="altcoinScore">--</span>/100</p>
+      <div class="alt-season-bar">
+        <span id="bitcoinDot"></span>
+      </div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <h4>Fear & Greed</h4>
+    <div class="gauge">
+      <span id="fearValue">--</span>
+      <p id="fearLabel">--</p>
+    </div>
+  </div>
+  <div class="stat-card">
+    <h4>Altcoin Season</h4>
+    <p><span id="altcoinScore">--</span>/100</p>
+    <div class="alt-season-bar">
+      <span id="bitcoinDot"></span>
+    </div>
+  </div>
+  <div class="filter-tabs">
+    <button>All</button>
+    <button>NFTs</button>
+    <button>DeFi</button>
+    <button>Trending</button>
+    <!-- more -->
+  </div>
+  
   <div class="container">
     <!-- Modal for chart -->
     <div id="chartModal" style="display:none;">
@@ -237,6 +396,7 @@
         <button onclick="toggleChartType()">Toggle Candlestick</button>
         <button onclick="toggleFullScreenChart()">Fullscreen</button>
         <button class="close-btn" onclick="closeChart()">Close</button>
+        <button onclick="toggleCandleChart()">Toggle Candlestick</button>
       </div>
       <canvas id="priceChart"></canvas>
     </div>

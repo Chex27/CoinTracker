@@ -1,5 +1,16 @@
 const express = require('express');
 const axios = require('axios');
+
+app.get('/api/fear-greed', async (req, res) => {
+  try {
+    const { data } = await axios.get('https://api.alternative.me/fng/');
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching Fear & Greed Index:', error);
+    res.status(500).json({ error: 'Failed to fetch Fear & Greed Index' });
+  }
+});
+
 const path = require('path');
 require('dotenv').config();
 const passport = require('passport');
@@ -124,30 +135,34 @@ app.get('/api/prices', async (req, res) => {
   }
 });
 
-// Fetch historical chart data for a coin
 app.get('/api/chart/:coinId', async (req, res) => {
   const { coinId } = req.params;
-  const range = req.query.range || '1y'; // Default to 1 year if no range is provided
+  const { range } = req.query;
 
-  // Determine the timeframe (adjust based on API capabilities)
-  let days = 365; // Default is 1 year
-  if (range === '7d') days = 7;
+  let days = 365; // default
+  if (range === '1d') days = 1;
+  else if (range === '7d') days = 7;
   else if (range === '30d') days = 30;
+  else if (range === '90d') days = 90;
+  else if (range === 'max') days = 'max';
 
   try {
     const { data } = await axios.get(`https://pro-api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
       params: {
         vs_currency: 'usd',
         days: days,
+        interval: range === '1d' ? 'hourly' : 'daily', // better resolution for 1d
         x_cg_pro_api_key: process.env.COINGECKO_KEY
       }
     });
 
     res.json(data);
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "failed to fetch chart data" });
   }
 });
+
 
 // Fetch latest crypto news using the provided API key
 app.get('/api/news', async (req, res) => {
@@ -164,6 +179,17 @@ app.get('/api/news', async (req, res) => {
 
 // Serve static files (e.g., for frontend)
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/api/altcoin-season', async (req, res) => {
+  try {
+    const { data } = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/altcoin-season', {
+      headers: { 'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY }
+    });
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching Altcoin Season Index:', error);
+    res.status(500).json({ error: 'Failed to fetch Altcoin Season Index' });
+  }
+});
 
 // Start the server
 app.listen(PORT, () => {
