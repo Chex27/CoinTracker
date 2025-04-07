@@ -14,7 +14,10 @@ function toggleCandleChart() {
   isCandle = !isCandle;
   loadChart(currentRange);
 }
-
+function getColorClass(value) {
+  if (value === null || isNaN(value)) return '';
+  return value >= 0 ? 'positive' : 'negative';
+}
 function loadCoins() {
   fetch(`/api/prices?page=${currentPage}`)
     .then(res => res.json())
@@ -27,25 +30,27 @@ function loadCoins() {
         if (sortAscending) return a[currentSortKey] - b[currentSortKey];
         return b[currentSortKey] - a[currentSortKey];
       });
-
       data.forEach(coin => {
         const row = document.createElement("tr");
-        const alertValue = localStorage.getItem(`alert-${coin.id}`);
-
+      
+        // 🔥 Chart click restored!
+        row.onclick = () => showChart(coin.id, coin.name);
+      
         row.innerHTML = `
           <td><img src="${coin.image}" width="30"></td>
           <td>${coin.name}</td>
           <td>${coin.symbol.toUpperCase()}</td>
-          <td class="${coin.change_1h > 0 ? 'positive' : 'negative'}">${coin.current_price}</td>
-          <td>${coin.change_1h?.toFixed(2)}%</td>
-          <td>${coin.change_24h?.toFixed(2)}%</td>
-          <td>${coin.change_7d?.toFixed(2)}%</td>
+          <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
+          <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
+          <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
+          <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
           <td>${coin.circulating_supply.toLocaleString()}</td>
-          <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button><br><small>${alertValue ? `$${alertValue}` : ''}</small></td>
+          <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
         `;
-        tbody.appendChild(row);
+      
+        document.querySelector("#crypto-table tbody").appendChild(row);
       });
     });
 }
