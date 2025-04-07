@@ -8,7 +8,7 @@
 
   <style>
     body {
-      background: linear-gradient(to right, #000000, #2a3b4c);
+      background: linear-gradient(to right, #6a0dad, #1c1c2c);
       color: #fff;
       font-family: 'Arial', sans-serif;
       overflow-x: hidden;
@@ -19,7 +19,7 @@
 
     h1, h2 {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #ffcd3c;
+      color: #ffd700;
       text-align: center;
       font-size: 3rem;
       margin-bottom: 20px;
@@ -31,7 +31,7 @@
       padding: 12px;
       font-size: 1.2rem;
       border-radius: 6px;
-      background: #333;
+      background: #3b2b5b;
       color: #fff;
       border: none;
       margin-bottom: 20px;
@@ -39,7 +39,7 @@
 
     #crypto-table {
       width: 100%;
-      background-color: #2d3d50;
+      background-color: #351c4d;
       border-radius: 10px;
       overflow: hidden;
       margin-top: 20px;
@@ -53,17 +53,17 @@
       text-align: center;
       font-size: 1.1rem;
       color: #fff;
-      background-color: #1c2532;
-      border: 1px solid #444;
+      background-color: #2a1740;
+      border: 1px solid #6a0dad;
     }
 
     th {
-      background-color: #151d2b;
+      background-color: #230f3e;
       color: #ffcd3c;
     }
 
     tr:hover {
-      background-color: #2c3c48;
+      background-color: #412463;
       cursor: pointer;
     }
 
@@ -81,7 +81,7 @@
       padding: 10px;
       border: none;
       border-radius: 8px;
-      background-color: #f8e112;
+      background-color: #ffcd3c;
       color: #1a1a1a;
       font-size: 1rem;
       cursor: pointer;
@@ -90,7 +90,7 @@
     }
 
     button:hover {
-      background-color: #e2d006;
+      background-color: #e2b806;
     }
 
     .sparkline {
@@ -126,7 +126,7 @@
     canvas {
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-      background: #1f2633;
+      background: #2f1a4a;
     }
 
     .close-btn {
@@ -153,18 +153,18 @@
 
     .chart-range-buttons button {
       margin: 5px;
-      background-color: #2a3b4c;
+      background-color: #6a0dad;
       color: #fff;
-      border: 1px solid #555;
+      border: 1px solid #ffcd3c;
     }
 
     .chart-range-buttons button:hover {
-      background-color: #444;
+      background-color: #4b0b8a;
     }
 
     #crypto-news {
       margin-top: 40px;
-      background: #1f2633;
+      background: #2f1a4a;
       border-radius: 10px;
       padding: 20px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
@@ -177,7 +177,7 @@
     }
 
     .news-item {
-      background: #2a3b4c;
+      background: #4b2e69;
       padding: 10px;
       margin: 10px 0;
       border-radius: 5px;
@@ -211,13 +211,13 @@
       padding: 10px;
       text-decoration: none;
       color: white;
-      background-color: #333;
+      background-color: #444;
       margin-bottom: 10px;
       border-radius: 5px;
     }
 
     #menu a:hover {
-      background-color: #444;
+      background-color: #555;
     }
     .sparkline {
   width: 120px;
@@ -360,20 +360,6 @@
       </div>
     </div>
   </div>
-  <div class="stat-card">
-    <h4>Fear & Greed</h4>
-    <div class="gauge">
-      <span id="fearValue">--</span>
-      <p id="fearLabel">--</p>
-    </div>
-  </div>
-  <div class="stat-card">
-    <h4>Altcoin Season</h4>
-    <p><span id="altcoinScore">--</span>/100</p>
-    <div class="alt-season-bar">
-      <span id="bitcoinDot"></span>
-    </div>
-  </div>
   <div class="filter-tabs">
     <button>All</button>
     <button>NFTs</button>
@@ -399,6 +385,9 @@
         <button onclick="toggleCandleChart()">Toggle Candlestick</button>
       </div>
       <canvas id="priceChart"></canvas>
+      <!-- Make sure these IDs exist -->
+<div id="market-cap">$--</div>
+<div id="cmc-100">--%</div>
     </div>
 
     <!-- Search bar -->
@@ -442,7 +431,9 @@
       <a href="/google-login">Login with Google</a>
     </div>
   </div>
-
+  <span id="market-cap-value"></span>
+  <span id="market-cap-change"></span>
+  <span id="cmc100-value"></span>  
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@fnando/sparkline@0.4.1/dist/sparkline.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
