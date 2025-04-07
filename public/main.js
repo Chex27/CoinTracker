@@ -18,22 +18,21 @@ function loadCoins() {
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector("#crypto-table tbody");
-      tbody.innerHTML = "";
+
+      // ✅ Instead of clearing, APPEND to table
       data.forEach(coin => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><img src="${coin.image}" alt="${coin.name}" width="30" height="30"></td>
-          <td onclick="showChart('${coin.id}', '${coin.name}')">${coin.name}</td>
+          <td><img src="${coin.image}" width="30"></td>
+          <td>${coin.name}</td>
           <td>${coin.symbol.toUpperCase()}</td>
-          <td class="${coin.change_1h > 0 ? 'positive' : 'negative'}">$${coin.current_price}</td>
-          <td class="${coin.change_1h > 0 ? 'positive' : 'negative'}">${coin.change_1h?.toFixed(2)}%</td>
-          <td class="${coin.change_24h > 0 ? 'positive' : 'negative'}">${coin.change_24h?.toFixed(2)}%</td>
-          <td class="${coin.change_7d > 0 ? 'positive' : 'negative'}">${coin.change_7d?.toFixed(2)}%</td>
-          <td>$${coin.market_cap?.toLocaleString()}</td>
-          <td>$${coin.total_volume?.toLocaleString()}</td>
-          <td>${coin.circulating_supply?.toLocaleString()}</td>
-          <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button></td>
-          <td><canvas class="sparkline" id="spark-${coin.id}" width="120" height="30"></canvas></td>
+          <td class="${coin.change_1h > 0 ? 'positive' : 'negative'}">${coin.current_price}</td>
+          <td>${coin.change_1h?.toFixed(2)}%</td>
+          <td>${coin.change_24h?.toFixed(2)}%</td>
+          <td>${coin.change_7d?.toFixed(2)}%</td>
+          <td>$${coin.market_cap.toLocaleString()}</td>
+          <td>$${coin.total_volume.toLocaleString()}</td>
+          <td>${coin.circulating_supply.toLocaleString()}</td>
         `;
         tbody.appendChild(row);
 
@@ -220,6 +219,32 @@ function loadAltcoinSeasonIndex() {
       bitcoinDot.style.left = `${altcoinSeasonScore}%`;
     })
     .catch(error => console.error('Error loading Altcoin Season Index:', error));
+}
+async function loadGlobalMetrics() {
+  try {
+    const res = await fetch('/api/global-metrics');
+    const data = await res.json();
+    const metrics = data.data;
+
+    document.getElementById('market-cap-value').textContent = `$${Number(metrics.quote.USD.total_market_cap).toLocaleString()}`;
+    document.getElementById('market-cap-change').textContent = `${metrics.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
+
+    document.getElementById('cmc100-value').textContent = `$${Number(metrics.quote.USD.cmc_dominance).toLocaleString()}`;
+  } catch (err) {
+    console.error("Global metrics fetch failed:", err);
+  }
+}
+function loadGlobalMetrics() {
+  fetch('/api/global-metrics')
+    .then(res => res.json())
+    .then(data => {
+      const marketCap = data.data.quote.USD.total_market_cap.toLocaleString();
+      const cmc100 = data.data.quote.USD.cmc_dominance.toFixed(2);
+
+      document.getElementById('market-cap').innerText = `$${marketCap}`;
+      document.getElementById('cmc-100').innerText = `${cmc100}%`;
+    })
+    .catch(err => console.error('Global Metrics Error:', err));
 }
 
 function loadMore() {
