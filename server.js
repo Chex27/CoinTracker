@@ -157,6 +157,20 @@ app.get('/api/altcoin-season', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch Altcoin Season Index' });
   }
 });
+// 🌎 Global market metrics (Market Cap, CMC100, etc.)
+app.get('/api/global-metrics', async (req, res) => {
+  try {
+    const response = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest', {
+      headers: {
+        'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY
+      }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching global metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch global metrics' });
+  }
+});
 
 // Start server
 app.listen(PORT, () => {
