@@ -7,21 +7,31 @@ let currentCoinId;
 let currentCoinName;
 let currentRange = '365';
 let isCandlestick = true;
+let currentSortKey = 'market_cap';
+let sortAscending = false;
+
 function toggleCandleChart() {
   isCandle = !isCandle;
   loadChart(currentRange);
 }
 
-// Inside your loadCoins() function in main.js
 function loadCoins() {
   fetch(`/api/prices?page=${currentPage}`)
     .then(res => res.json())
     .then(data => {
       const tbody = document.querySelector("#crypto-table tbody");
+      if (currentPage === 1) tbody.innerHTML = "";
 
-      // ✅ Instead of clearing, APPEND to table
+      // Sort data before appending
+      data.sort((a, b) => {
+        if (sortAscending) return a[currentSortKey] - b[currentSortKey];
+        return b[currentSortKey] - a[currentSortKey];
+      });
+
       data.forEach(coin => {
         const row = document.createElement("tr");
+        const alertValue = localStorage.getItem(`alert-${coin.id}`);
+
         row.innerHTML = `
           <td><img src="${coin.image}" width="30"></td>
           <td>${coin.name}</td>
@@ -33,20 +43,33 @@ function loadCoins() {
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
           <td>${coin.circulating_supply.toLocaleString()}</td>
+          <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price})">🔔</button><br><small>${alertValue ? `$${alertValue}` : ''}</small></td>
         `;
         tbody.appendChild(row);
-
-        // 🧠 Draw sparkline (7d)
-        const ctx = document.getElementById(`spark-${coin.id}`);
-        if (ctx && coin.sparkline_in_7d?.price) {
-          Sparkline.draw(ctx, coin.sparkline_in_7d.price, {
-            lineColor: "#ea3943", // 🔴 CoinGecko red
-            startColor: "transparent",
-            endColor: "transparent"
-          });
-        }
       });
     });
+}
+
+function setAlert(id, name, price) {
+  const target = prompt(`Set alert for ${name} (current: $${price})`);
+  if (target) {
+    localStorage.setItem(`alert-${id}`, target);
+    alert(`Alert set for ${name} at $${target}`);
+    loadCoins(); // Refresh display
+  }
+}
+
+function addSortListeners() {
+  const headers = document.querySelectorAll("#crypto-table th");
+  headers.forEach((header, index) => {
+    header.addEventListener("click", () => {
+      const keys = ['name','symbol','current_price','change_1h','change_24h','change_7d','market_cap','total_volume','circulating_supply'];
+      currentSortKey = keys[index - 1] || 'market_cap'; // skip coin img
+      sortAscending = !sortAscending;
+      currentPage = 1;
+      loadCoins();
+    });
+  });
 }
 
 function showChart(coinId, coinName) {
@@ -79,7 +102,6 @@ function loadChart(range) {
       const labels = data.prices.map(p => new Date(p[0]));
       const lineData = data.prices.map(p => ({ x: new Date(p[0]), y: p[1] }));
 
-      // Create mock OHLC from line data (🧠 optional: replace with real OHLC if you upgrade CoinGecko tier)
       const candleData = data.prices.map(([t, price]) => ({
         x: new Date(t),
         o: price * 0.995,
@@ -143,47 +165,15 @@ function loadChart(range) {
     });
 }
 
-
-function baseChartOptions() {
-  return {
-    responsive: true,
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'day',
-          tooltipFormat: 'MMM dd',
-          displayFormats: {
-            day: 'MMM dd',
-            month: 'MMM yyyy',
-            year: 'yyyy'
-          }
-        },
-        ticks: { color: "#fff" },
-        grid: { color: "#333" }
-      },
-      y: {
-        ticks: { color: "#fff" },
-        grid: { color: "#333" }
-      }
-    }
-  };
-}
-
 function closeChart() {
   document.getElementById("chartModal").style.display = "none";
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  }
+  if (document.fullscreenElement) document.exitFullscreen();
 }
 
 function toggleFullScreenChart() {
   const chartModal = document.getElementById('chartModal');
-  if (!document.fullscreenElement) {
-    chartModal.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
+  if (!document.fullscreenElement) chartModal.requestFullscreen();
+  else document.exitFullscreen();
 }
 
 function toggleCandlestick() {
@@ -191,13 +181,6 @@ function toggleCandlestick() {
   loadChart(currentRange);
 }
 
-function setAlert(id, name, price) {
-  const target = prompt(`Set alert for ${name} (current: $${price})`);
-  if (target) {
-    localStorage.setItem(`alert-${id}`, target);
-    alert(`Alert set for ${name} at $${target}`);
-  }
-}
 function loadFearGreedIndex() {
   fetch('/api/fear-greed')
     .then(response => response.json())
@@ -209,40 +192,27 @@ function loadFearGreedIndex() {
     })
     .catch(error => console.error('Error loading Fear & Greed Index:', error));
 }
+
 function loadAltcoinSeasonIndex() {
   fetch('/api/altcoin-season')
     .then(response => response.json())
     .then(data => {
       const altcoinSeasonScore = data.data.altcoin_season_score;
       document.getElementById('altcoinScore').innerText = altcoinSeasonScore;
-      const bitcoinDot = document.getElementById('bitcoinDot');
-      bitcoinDot.style.left = `${altcoinSeasonScore}%`;
+      document.getElementById('bitcoinDot').style.left = `${altcoinSeasonScore}%`;
     })
     .catch(error => console.error('Error loading Altcoin Season Index:', error));
 }
-async function loadGlobalMetrics() {
-  try {
-    const res = await fetch('/api/global-metrics');
-    const data = await res.json();
-    const metrics = data.data;
 
-    document.getElementById('market-cap-value').textContent = `$${Number(metrics.quote.USD.total_market_cap).toLocaleString()}`;
-    document.getElementById('market-cap-change').textContent = `${metrics.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
-
-    document.getElementById('cmc100-value').textContent = `$${Number(metrics.quote.USD.cmc_dominance).toLocaleString()}`;
-  } catch (err) {
-    console.error("Global metrics fetch failed:", err);
-  }
-}
 function loadGlobalMetrics() {
   fetch('/api/global-metrics')
     .then(res => res.json())
     .then(data => {
-      const marketCap = data.data.quote.USD.total_market_cap.toLocaleString();
-      const cmc100 = data.data.quote.USD.cmc_dominance.toFixed(2);
-
-      document.getElementById('market-cap').innerText = `$${marketCap}`;
-      document.getElementById('cmc-100').innerText = `${cmc100}%`;
+      const metrics = data.data;
+      document.getElementById('marketCap').innerText = `$${Number(metrics.quote.USD.total_market_cap).toLocaleString()}`;
+      document.getElementById('marketCapChange').innerText = `${metrics.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
+      document.getElementById('cmc100').innerText = `$${Number(metrics.quote.USD.cmc_dominance).toFixed(2)}`;
+      document.getElementById('cmc100Change').innerText = "--%";
     })
     .catch(err => console.error('Global Metrics Error:', err));
 }
@@ -257,9 +227,11 @@ window.onload = () => {
   loadCryptoNews();
   loadFearGreedIndex();
   loadAltcoinSeasonIndex();
-  setInterval(loadCoins, 60000);
+  addSortListeners();
+  loadGlobalMetrics();
+  setInterval(() => loadCoins(), 60000); // every minute
+  setInterval(() => loadGlobalMetrics(), 120000); // every 2 min
 };
-
 
 function loadCryptoNews() {
   // Skipped
