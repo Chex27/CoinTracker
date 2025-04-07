@@ -7,7 +7,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const bodyParser = require('body-parser');
 
-const app = express(); // ✅ Initialize 'app' BEFORE any app.use or app.get
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -19,11 +19,10 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Initialize Passport
+// Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
-// In-memory user (replace with DB later)
 const users = [{ id: 1, username: 'user', password: 'password' }];
 
 passport.use(new LocalStrategy((username, password, done) => {
@@ -40,7 +39,7 @@ passport.deserializeUser((id, done) => {
   done(null, user);
 });
 
-// Auth routes
+// Auth Routes
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
 app.post('/login', passport.authenticate('local', {
@@ -61,7 +60,7 @@ app.get('/logout', (req, res, next) => {
   });
 });
 
-// Static files
+// Static Files
 app.use(express.static(path.join(__dirname, 'public')));
 
 // === API Routes ===
@@ -157,7 +156,8 @@ app.get('/api/altcoin-season', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch Altcoin Season Index' });
   }
 });
-// 🌎 Global market metrics (Market Cap, CMC100, etc.)
+
+// 🟡 Global Metrics: Market Cap + CMC100
 app.get('/api/global-metrics', async (req, res) => {
   try {
     const response = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest', {
@@ -172,7 +172,6 @@ app.get('/api/global-metrics', async (req, res) => {
   }
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
