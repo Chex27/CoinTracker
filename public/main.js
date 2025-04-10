@@ -1,4 +1,4 @@
-// 📈 CoinTracker Upgraded Chart Script
+// 🚀 HeckBit Upgraded Chart Script
 // ✅ Candlestick simulation, chart range, fullscreen, line toggle
 
 let currentPage = 1;
@@ -237,6 +237,19 @@ window.onload = () => {
   setInterval(() => loadCoins(), 60000); // every minute
   setInterval(() => loadGlobalMetrics(), 120000); // every 2 min
 };
+function loadCryptoNews() {
+  // already here in main.js
+}
+
+// ✅ 👇 Paste wallet functions AFTER everything else
+
+async function trackWallet(address = null) {
+  // the full function from your wallet script
+}
+
+async function connectWallet() {
+  // the full function from your wallet script
+}
 
 function loadCryptoNews() {
   // Skipped

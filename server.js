@@ -1,3 +1,4 @@
+// Updated server.js using free CoinGecko API (no pro key required)
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
@@ -10,7 +11,6 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(session({
@@ -19,7 +19,6 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -27,9 +26,7 @@ const users = [{ id: 1, username: 'user', password: 'password' }];
 
 passport.use(new LocalStrategy((username, password, done) => {
   const user = users.find(u => u.username === username);
-  if (!user || user.password !== password) {
-    return done(null, false, { message: 'Invalid credentials.' });
-  }
+  if (!user || user.password !== password) return done(null, false);
   return done(null, user);
 }));
 
@@ -39,20 +36,14 @@ passport.deserializeUser((id, done) => {
   done(null, user);
 });
 
-// Auth Routes
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-
-app.post('/login', passport.authenticate('local', {
-  failureRedirect: '/login'
-}), (req, res) => {
+app.post('/login', passport.authenticate('local', { failureRedirect: '/login' }), (req, res) => {
   res.redirect('/dashboard');
 });
-
 app.get('/dashboard', (req, res) => {
   if (!req.isAuthenticated()) return res.redirect('/login');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 app.get('/logout', (req, res, next) => {
   req.logout(err => {
     if (err) return next(err);
@@ -60,17 +51,14 @@ app.get('/logout', (req, res, next) => {
   });
 });
 
-// Static Files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// === API Routes ===
-
+// Free CoinGecko API endpoints
 app.get('/api/fear-greed', async (req, res) => {
   try {
     const { data } = await axios.get('https://api.alternative.me/fng/');
     res.json(data);
-  } catch (error) {
-    console.error('Error fetching Fear & Greed Index:', error);
+  } catch (err) {
     res.status(500).json({ error: 'Failed to fetch Fear & Greed Index' });
   }
 });
@@ -78,15 +66,14 @@ app.get('/api/fear-greed', async (req, res) => {
 app.get('/api/prices', async (req, res) => {
   const page = req.query.page || 1;
   try {
-    const { data } = await axios.get('https://pro-api.coingecko.com/api/v3/coins/markets', {
+    const { data } = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
       params: {
         vs_currency: 'usd',
         order: 'market_cap_desc',
         per_page: 25,
         page,
         sparkline: true,
-        price_change_percentage: '1h,24h,7d',
-        x_cg_pro_api_key: process.env.COINGECKO_KEY
+        price_change_percentage: '1h,24h,7d'
       }
     });
     const formatted = data.map(c => ({
@@ -121,17 +108,15 @@ app.get('/api/chart/:coinId', async (req, res) => {
   else if (range === 'max') days = 'max';
 
   try {
-    const { data } = await axios.get(`https://pro-api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
+    const { data } = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
       params: {
         vs_currency: 'usd',
         days,
-        interval: range === '1d' ? 'hourly' : 'daily',
-        x_cg_pro_api_key: process.env.COINGECKO_KEY
+        interval: range === '1d' ? 'hourly' : 'daily'
       }
     });
     res.json(data);
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: "failed to fetch chart data" });
   }
 });
@@ -146,29 +131,34 @@ app.get('/api/news', async (req, res) => {
 });
 
 app.get('/api/altcoin-season', async (req, res) => {
-  try {
-    const { data } = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/altcoin-season', {
-      headers: { 'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY }
-    });
-    res.json(data);
-  } catch (error) {
-    console.error('Error fetching Altcoin Season Index:', error);
-    res.status(500).json({ error: 'Failed to fetch Altcoin Season Index' });
-  }
+  res.json({ data: { altcoin_season_score: 50 } }); // Mocked for now
 });
 
-// 🟡 Global Metrics: Market Cap + CMC100
 app.get('/api/global-metrics', async (req, res) => {
+  res.json({
+    data: {
+      quote: {
+        USD: {
+          total_market_cap: 2400000000000,
+          cmc_dominance: 43.2
+        }
+      },
+      market_cap_change_percentage_24h_usd: 1.35
+    }
+  });
+});
+app.get('/api/wallet/:address', async (req, res) => {
+  const wallet = req.params.address;
+  const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
+
   try {
-    const response = await axios.get('https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest', {
-      headers: {
-        'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY
-      }
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching global metrics:', error);
-    res.status(500).json({ error: 'Failed to fetch global metrics' });
+    const url = `https://api.polygonscan.com/api?module=account&action=tokentx&address=${wallet}&apikey=${POLYGON_API_KEY}`;
+    const { data } = await axios.get(url);
+
+    res.json(data);
+  } catch (err) {
+    console.error('Polygon wallet fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch wallet transactions' });
   }
 });
 

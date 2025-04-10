@@ -3,298 +3,153 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HeckBit Dashboard</title>
+  <title>HeckBit Wallet Dashboard</title>
   <link rel="icon" href="data:,">
-
   <style>
-body {
-  background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
-  color: #ffffff;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  transition: all 0.3s ease;
-  overflow-x: hidden;
-}
-
-h1 {
-  font-size: 2.5rem;
-  text-align: center;
-  color: #00ffcc;
-  margin: 20px 0 10px;
-}
-
-#stats-panel {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 20px;
-  padding: 0 20px;
-  margin-bottom: 10px;
-}
-
-.stat-card {
-  flex: 1 1 220px;
-  background-color: #1a1a2e;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,255,204,0.3);
-  text-align: center;
-  border: 1px solid #00ffcc;
-}
-
-.stat-card h4 {
-  color: #00ffcc;
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin: 5px 0;
-  color: #00ffcc;
-}
-
-.stat-change {
-  font-size: 1rem;
-  color: #f87171;
-}
-
-.gauge span {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #00ffcc;
-}
-
-#fearLabel {
-  font-size: 1rem;
-  margin-top: 5px;
-}
-
-.alt-season-bar {
-  background: linear-gradient(to right, orange 50%, blue 50%);
-  border-radius: 10px;
-  height: 10px;
-  position: relative;
-  margin-top: 5px;
-}
-
-#bitcoinDot {
-  background: white;
-  border-radius: 50%;
-  width: 10px;
-  height: 10px;
-  position: absolute;
-  top: -6px;
-}
-
-#crypto-table {
-  width: 100%;
-  background-color: #1a1a2e;
-  border-radius: 12px;
-  border: 1px solid #00ffcc;
-  box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
-  border-spacing: 0;
-  margin-top: 20px;
-}
-
-th {
-  background-color: #16213e;
-  color: #00ffcc;
-  font-weight: bold;
-  padding: 12px;
-}
-
-td {
-  background-color: #0f3460;
-  color: #eeeeee;
-  border-top: 1px solid #00ffcc;
-  text-align: center;
-  padding: 12px;
-}
-
-tr:hover {
-  background-color: #1a1a40;
-}
-
-button, .btn {
-  background-color: #00ffcc;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-button:hover, .btn:hover {
-  background-color: #00ccaa;
-}
-
-#search-box {
-  width: 100%;
-  padding: 12px;
-  font-size: 1.2rem;
-  border-radius: 6px;
-  background: #222831;
-  color: #eeeeee;
-  border: 1px solid #00ffcc;
-  margin-bottom: 20px;
-}
-
-#crypto-news {
-  margin-top: 40px;
-  background: #1a1a2e;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0,255,204,0.3);
-}
-
-#crypto-news h3 {
-  font-size: 1.5rem;
-  margin-bottom: 15px;
-  color: #00ffcc;
-  text-shadow: 0 0 5px #00ffcc;
-}
-
-.news-item {
-  background: #222831;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 5px;
-  border: 1px solid #00ffcc;
-}
-
-.news-item a {
-  color: #00eaff;
-  text-decoration: none;
-  font-size: 1.1rem;
-}
-
-@media (max-width: 768px) {
-  #stats-panel {
-    flex-direction: column;
-  }
-}
+    body {
+      background: #f9f9f9;
+      color: #111;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      font-size: 2.5rem;
+      text-align: center;
+      color: #007bff;
+      margin: 20px 0 10px;
+    }
+    .container {
+      padding: 20px;
+    }
+    input, button {
+      font-size: 1rem;
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 6px;
+      border: 1px solid #007bff;
+    }
+    input {
+      width: 300px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #walletData {
+      margin-top: 15px;
+      background: #e9f5ff;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    @media (max-width: 600px) {
+      input {
+        width: 100% !important;
+        margin-bottom: 10px;
+      }
+      button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .container {
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>HeckBit.com</h1>
-  <div id="stats-panel">
-    <div class="stat-card">
-      <h4>Market Cap</h4>
-      <p class="stat-value" id="marketCap">$--</p>
-      <p class="stat-change" id="marketCapChange">--%</p>
-      <canvas id="marketCapSpark" width="120" height="30"></canvas>
-    </div>
-    <div class="stat-card">
-      <h4>CMC100</h4>
-      <p class="stat-value" id="cmc100">$--</p>
-      <p class="stat-change" id="cmc100Change">--%</p>
-      <canvas id="cmc100Spark" width="120" height="30"></canvas>
-    </div>
-    <div class="stat-card">
-      <h4>Fear &amp; Greed</h4>
-      <div class="gauge">
-        <span id="fearValue">--</span>
-        <p id="fearLabel">--</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <h4>Altcoin Season</h4>
-      <p><span id="altcoinScore">--</span>/100</p>
-      <div class="alt-season-bar">
-        <span id="bitcoinDot"></span>
-      </div>
-    </div>
-  </div>
-  <div class="filter-tabs">
-    <button>All</button>
-    <button>NFTs</button>
-    <button>DeFi</button>
-    <button>Trending</button>
-    <!-- more -->
-  </div>
-  
+  <h1>HeckBit Wallet Dashboard</h1>
   <div class="container">
-    <!-- Modal for chart -->
-    <div id="chartModal" style="display:none;">
-      <h3 id="chartTitle"></h3>
-      <div class="chart-range-buttons">
-        <button onclick="loadChart('1')">1D</button>
-        <button onclick="loadChart('7')">7D</button>
-        <button onclick="loadChart('30')">1M</button>
-        <button onclick="loadChart('90')">3M</button>
-        <button onclick="loadChart('365')">1Y</button>
-        <button onclick="loadChart('max')">ALL</button>
-        <button onclick="toggleChartType()">Toggle Candlestick</button>
-        <button onclick="toggleFullScreenChart()">Fullscreen</button>
-        <button class="close-btn" onclick="closeChart()">Close</button>
-        <button onclick="toggleCandleChart()">Toggle Candlestick</button>
-        <button onclick="toggleView()">Toggle View</button>
-
-      </div>
-      <canvas id="priceChart"></canvas>
-      <!-- Make sure these IDs exist -->
-<div id="market-cap">$--</div>
-<div id="cmc-100">--%</div>
-    </div>
-
-    <!-- Search bar -->
-    <input type="text" id="search-box" class="form-control mb-3" placeholder="Search for a coin...">
-
-    <!-- Crypto table -->
-    <table class="table table-dark table-hover text-center align-middle" id="crypto-table">
-      <thead>
-        <tr>
-          <th>Coin</th>
-          <th>Symbol</th>
-          <th>Price</th>
-          <th>1h%</th>
-          <th>24h%</th>
-          <th>7d%</th>
-          <th>Market Cap</th>
-          <th>Volume</th>
-          <th>Supply</th>
-          <th>🔔</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <button class="btn btn-info w-250" onclick="loadMore()">Load More</button>
-
-    <div id="crypto-news">
-      <h3>Latest Crypto News</h3>
-      <div id="news-list"></div>
-    </div>
+    <h3 style="color:#007bff">Track Wallet (Polygon)</h3>
+    <input id="walletInput" placeholder="Paste wallet address..." />
+    <button onclick="trackWallet()">Track</button>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <div id="walletData">Wallet data will appear here.</div>
   </div>
 
-  <!-- Hamburger Menu -->
-  <div class="hamburger-menu">
-    <button onclick="toggleMenu()">☰</button>
-    <div id="menu" style="display:none;">
-      <a href="/login">Login</a>
-      <a href="/register">Create Account</a>
-      <a href="#news-section" onclick="loadCryptoNews()">Latest Crypto News</a>
-      <a href="/sms-login">Login with SMS</a>
-      <a href="/google-login">Login with Google</a>
-    </div>
-  </div>
-  <span id="market-cap-value"></span>
-  <span id="market-cap-change"></span>
-  <span id="cmc100-value"></span>  
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@fnando/sparkline@0.4.1/dist/sparkline.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
-  <script src="/main.js"></script>
   <script>
-    function toggleMenu() {
-      const menu = document.getElementById('menu');
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    async function trackWallet(address = null) {
+      const input = document.getElementById('walletInput');
+      const wallet = address || input.value.trim();
+      const output = document.getElementById('walletData');
+
+      if (!wallet) return alert('Please enter a wallet address.');
+
+      output.innerHTML = '<em>Fetching balances... please wait ⏳</em>';
+
+      const contractAddresses = [
+        {
+          symbol: 'WETH',
+          address: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
+          logo: 'https://assets.coingecko.com/coins/images/2518/small/weth.png'
+        },
+        {
+          symbol: 'USDC',
+          address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
+          logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png'
+        },
+        {
+          symbol: 'DAI',
+          address: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
+          logo: 'https://assets.coingecko.com/coins/images/9956/small/4943.png'
+        }
+      ];
+
+      let html = `<strong>Address:</strong> ${wallet}<br><br>`;
+      let totalUSD = 0;
+      const tokenData = [];
+
+      for (const token of contractAddresses) {
+        try {
+          const res = await fetch(`https://api.polygonscan.com/api?module=account&action=tokenbalance&contractaddress=${token.address}&address=${wallet}&tag=latest&apikey=0OIzN0KVU6TiSxRj70NzExfe0B9nveuH`);
+          const data = await res.json();
+          const balance = parseFloat(data.result) / 1e18;
+
+          const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${token.symbol.toLowerCase()}&vs_currencies=usd`);
+          const priceData = await priceRes.json();
+          const price = priceData[token.symbol.toLowerCase()]?.usd || 0;
+
+          const usdValue = balance * price;
+          totalUSD += usdValue;
+
+          tokenData.push({ ...token, balance, usdValue });
+        } catch (err) {
+          console.error(`Error fetching ${token.symbol}:`, err);
+        }
+      }
+
+      for (const token of tokenData) {
+        const percent = ((token.usdValue / totalUSD) * 100).toFixed(1);
+        html += `
+          <div>
+            <img src="${token.logo}" width="20" style="vertical-align:middle;margin-right:5px">
+            <strong>${token.symbol}:</strong> ${token.balance.toFixed(4)} ($${token.usdValue.toFixed(2)})
+            <span style="color:#555;font-size:0.9rem">(${percent}% of portfolio)</span>
+            <a href="https://quickswap.exchange/#/swap?outputCurrency=${token.address}" target="_blank">Trade</a>
+          </div>`;
+      }
+
+      html += `<br><strong>Total Portfolio Value:</strong> $${totalUSD.toFixed(2)}`;
+      output.innerHTML = html;
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert('MetaMask is not installed');
+
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length) {
+          document.getElementById('walletInput').value = accounts[0];
+          trackWallet(accounts[0]);
+        }
+      } catch (error) {
+        console.error('MetaMask connection error:', error);
+      }
     }
   </script>
 </body>
