@@ -150,6 +150,52 @@ app.get('/api/global-metrics', async (req, res) => {
     }
   });
 });
+app.get('/api/ohlc/:pairId', async (req, res) => {
+  const { pairId } = req.params;
+  const { range } = req.query;
+
+  const days = range === '1d' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90;
+  const intervalMs = range === '1d' ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
+  try {
+    const query = {
+      query: `{
+        swaps(first: 1000, orderBy: timestamp, orderDirection: desc,
+          where: { pair: "${pairId}", timestamp_gt: ${Math.floor((Date.now() - days * 86400000) / 1000)} }) {
+          priceUSD
+          timestamp
+        }
+      }`
+    };
+
+    const { data } = await axios.post("https://api.thegraph.com/subgraphs/name/sameepsi/quickswap06", query);
+    const trades = data.data.swaps;
+
+    const ohlcMap = {};
+    trades.forEach(trade => {
+      const t = new Date(Number(trade.timestamp) * 1000);
+      const bucket = Math.floor(t.getTime() / intervalMs) * intervalMs;
+      const price = parseFloat(trade.priceUSD);
+      if (!ohlcMap[bucket]) {
+        ohlcMap[bucket] = { o: price, h: price, l: price, c: price };
+      } else {
+        ohlcMap[bucket].h = Math.max(ohlcMap[bucket].h, price);
+        ohlcMap[bucket].l = Math.min(ohlcMap[bucket].l, price);
+        ohlcMap[bucket].c = price;
+      }
+    });
+
+    const result = Object.entries(ohlcMap).map(([x, ohlc]) => ({
+      x: Number(x),
+      ...ohlc
+    }));
+
+    res.json({ prices: result });
+  } catch (err) {
+    console.error("OHLC fetch error:", err.message);
+    res.status(500).json({ error: 'Failed to fetch OHLC data' });
+  }
+});
 
 app.get('/api/altcoin-season', async (req, res) => {
   res.json({ data: { altcoin_season_score: 50 } });
