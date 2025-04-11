@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HeckBit Wallet Dashboard</title>
+  <title>HeckBit Wallet + Market Dashboard</title>
   <link rel="icon" href="data:,">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       background: #f9f9f9;
@@ -47,13 +48,25 @@
       padding: 15px;
       border-radius: 10px;
     }
+    #crypto-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 40px;
+    }
+    #crypto-table th, #crypto-table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+    #crypto-table th {
+      background: #007bff;
+      color: #fff;
+    }
+    .positive { color: green; }
+    .negative { color: red; }
     @media (max-width: 600px) {
-      input {
+      input, button {
         width: 100% !important;
-        margin-bottom: 10px;
-      }
-      button {
-        width: 100%;
         margin-bottom: 10px;
       }
       .container {
@@ -63,13 +76,33 @@
   </style>
 </head>
 <body>
-  <h1>HeckBit Wallet Dashboard</h1>
+  <h1>HeckBit Wallet + Market Dashboard</h1>
   <div class="container">
     <h3 style="color:#007bff">Track Wallet (Polygon)</h3>
     <input id="walletInput" placeholder="Paste wallet address..." />
     <button onclick="trackWallet()">Track</button>
     <button onclick="connectWallet()">Connect Wallet</button>
     <div id="walletData">Wallet data will appear here.</div>
+  </div>
+
+  <div class="container">
+    <h3 style="color:#007bff">Top 100 Coins</h3>
+    <table id="crypto-table">
+      <thead>
+        <tr>
+          <th>Logo</th>
+          <th>Name</th>
+          <th>Price</th>
+          <th>1h%</th>
+          <th>24h%</th>
+          <th>7d%</th>
+          <th>Market Cap</th>
+          <th>Volume</th>
+          <th>Sparkline</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <script>
@@ -106,7 +139,7 @@
 
       for (const token of contractAddresses) {
         try {
-          const res = await fetch(`https://api.polygonscan.com/api?module=account&action=tokenbalance&contractaddress=${token.address}&address=${wallet}&tag=latest&apikey=0OIzN0KVU6TiSxRj70NzExfe0B9nveuH`);
+          const res = await fetch(`https://api.polygonscan.com/api?module=account&action=tokenbalance&contractaddress=${token.address}&address=${wallet}&tag=latest&apikey=YOUR_API_KEY`);
           const data = await res.json();
           const balance = parseFloat(data.result) / 1e18;
 
@@ -140,7 +173,6 @@
 
     async function connectWallet() {
       if (!window.ethereum) return alert('MetaMask is not installed');
-
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length) {
@@ -151,6 +183,60 @@
         console.error('MetaMask connection error:', error);
       }
     }
+
+    async function loadCoins() {
+      const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
+      const coins = await res.json();
+      const tbody = document.querySelector("#crypto-table tbody");
+      tbody.innerHTML = "";
+      coins.forEach(coin => {
+        const row = document.createElement("tr");
+        const sparkline = `<canvas id="spark-${coin.id}" width="100" height="30"></canvas>`;
+        row.innerHTML = `
+          <td><img src="${coin.image}" width="24"></td>
+          <td>${coin.name}</td>
+          <td>$${coin.current_price.toFixed(2)}</td>
+          <td class="${coin.price_change_percentage_1h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
+          <td class="${coin.price_change_percentage_24h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
+          <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
+          <td>$${coin.market_cap.toLocaleString()}</td>
+          <td>$${coin.total_volume.toLocaleString()}</td>
+          <td>${sparkline}</td>
+        `;
+        tbody.appendChild(row);
+
+        setTimeout(() => drawSparkline(coin.id, coin.sparkline_in_7d.price), 0);
+      });
+    }
+
+    function drawSparkline(id, prices) {
+      const ctx = document.getElementById(`spark-${id}`).getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: prices.map((_, i) => i),
+          datasets: [{
+            data: prices,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0,123,255,0.1)',
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          elements: { line: { tension: 0.4 } },
+          responsive: false,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    loadCoins();
+    setInterval(loadCoins, 30000); // refresh every 30s
   </script>
 </body>
 </html>
