@@ -1,4 +1,4 @@
-// Updated server.js using free CoinGecko API (no pro key required)
+// server.js (Full version with OHLC integration)
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
@@ -53,7 +53,53 @@ app.get('/logout', (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Free CoinGecko API endpoints
+// ------------------ OHLC Endpoint ------------------
+const createOHLCBuckets = (trades, intervalMs) => {
+  const buckets = {};
+  trades.forEach((trade) => {
+    const time = trade.blockTimestamp;
+    const price = parseFloat(trade.priceUSD);
+    const bucketTime = Math.floor(new Date(time).getTime() / intervalMs) * intervalMs;
+    if (!buckets[bucketTime]) {
+      buckets[bucketTime] = { o: price, h: price, l: price, c: price };
+    } else {
+      const b = buckets[bucketTime];
+      b.h = Math.max(b.h, price);
+      b.l = Math.min(b.l, price);
+      b.c = price;
+    }
+  });
+  return Object.entries(buckets).map(([timestamp, ohlc]) => ({ x: Number(timestamp), ...ohlc }));
+};
+
+app.get('/api/ohlc/:pairId', async (req, res) => {
+  const { pairId } = req.params;
+  const { range } = req.query || {};
+  const days = range === '1d' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 365;
+  const intervalMs = range === '1d' ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
+  try {
+    const { data } = await axios.post('https://api.thegraph.com/subgraphs/name/sameepsi/quickswap06', {
+      query: `{
+        swaps(first: 1000, orderBy: timestamp, orderDirection: desc,
+          where: { pair: "${pairId}", timestamp_gt: ${Math.floor((Date.now() - days * 86400000) / 1000)} }) {
+          priceUSD
+          blockTimestamp
+        }
+      }`
+    });
+
+    const trades = data.data.swaps || [];
+    const ohlcData = createOHLCBuckets(trades, intervalMs);
+    res.json({ prices: ohlcData });
+  } catch (err) {
+    console.error('OHLC fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch OHLC data' });
+  }
+});
+
+// ------------------ Existing Endpoints ------------------
+
 app.get('/api/fear-greed', async (req, res) => {
   try {
     const { data } = await axios.get('https://api.alternative.me/fng/');
@@ -76,48 +122,9 @@ app.get('/api/prices', async (req, res) => {
         price_change_percentage: '1h,24h,7d'
       }
     });
-    const formatted = data.map(c => ({
-      id: c.id,
-      name: c.name,
-      symbol: c.symbol,
-      current_price: c.current_price,
-      market_cap: c.market_cap,
-      total_volume: c.total_volume,
-      circulating_supply: c.circulating_supply,
-      change_1h: c.price_change_percentage_1h_in_currency,
-      change_24h: c.price_change_percentage_24h_in_currency,
-      change_7d: c.price_change_percentage_7d_in_currency,
-      sparkline_in_7d: c.sparkline_in_7d,
-      image: c.image
-    }));
-    res.json(formatted);
-  } catch (e) {
-    res.status(500).json({ error: "failed to fetch prices" });
-  }
-});
-
-app.get('/api/chart/:coinId', async (req, res) => {
-  const { coinId } = req.params;
-  const { range } = req.query;
-
-  let days = '365';
-  if (range === '1d') days = '1';
-  else if (range === '7d') days = '7';
-  else if (range === '30d') days = '30';
-  else if (range === '90d') days = '90';
-  else if (range === 'max') days = 'max';
-
-  try {
-    const { data } = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart`, {
-      params: {
-        vs_currency: 'usd',
-        days,
-        interval: range === '1d' ? 'hourly' : 'daily'
-      }
-    });
     res.json(data);
   } catch (e) {
-    res.status(500).json({ error: "failed to fetch chart data" });
+    res.status(500).json({ error: 'Failed to fetch prices' });
   }
 });
 
@@ -126,12 +133,8 @@ app.get('/api/news', async (req, res) => {
     const { data } = await axios.get(`https://newsapi.org/v2/everything?q=crypto&apiKey=${process.env.NEWS_API_KEY}`);
     res.json(data.articles);
   } catch (e) {
-    res.status(500).json({ error: "failed to fetch news" });
+    res.status(500).json({ error: 'Failed to fetch news' });
   }
-});
-
-app.get('/api/altcoin-season', async (req, res) => {
-  res.json({ data: { altcoin_season_score: 50 } }); // Mocked for now
 });
 
 app.get('/api/global-metrics', async (req, res) => {
@@ -147,6 +150,11 @@ app.get('/api/global-metrics', async (req, res) => {
     }
   });
 });
+
+app.get('/api/altcoin-season', async (req, res) => {
+  res.json({ data: { altcoin_season_score: 50 } });
+});
+
 app.get('/api/wallet/:address', async (req, res) => {
   const wallet = req.params.address;
   const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
@@ -154,7 +162,6 @@ app.get('/api/wallet/:address', async (req, res) => {
   try {
     const url = `https://api.polygonscan.com/api?module=account&action=tokentx&address=${wallet}&apikey=${POLYGON_API_KEY}`;
     const { data } = await axios.get(url);
-
     res.json(data);
   } catch (err) {
     console.error('Polygon wallet fetch error:', err);
@@ -163,5 +170,5 @@ app.get('/api/wallet/:address', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`\u2705 Server running on port ${PORT}`);
 });

@@ -159,14 +159,14 @@
         if (priceChart) priceChart.destroy();
         const ctx = document.getElementById("priceChart").getContext("2d");
       
-        const lineData = data.prices.map(p => ({ x: new Date(p[0]), y: p[1] }));
-        const candleData = data.prices.map(([t, price]) => ({
-          x: new Date(t),
-          o: price * 0.995,
-          h: price * 1.005,
-          l: price * 0.985,
-          c: price
-        }));
+        const lineData = data.prices.map(p => ({ x: p[0], y: p[1] }));
+const candleData = data.prices.map(([t, price]) => ({
+  x: t,
+  o: price * 0.995,
+  h: price * 1.005,
+  l: price * 0.985,
+  c: price
+}));
       
         priceChart = new Chart(ctx, {
           type: isCandlestick ? 'candlestick' : 'line',
