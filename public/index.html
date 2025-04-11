@@ -6,6 +6,9 @@
   <title>HeckBit Wallet + Market Dashboard</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
     body {
       background: #f9f9f9;
@@ -104,24 +107,23 @@
       <tbody></tbody>
     </table>
   </div>
-<!-- Add this modal anywhere in your index.html (preferably inside <body>) -->
-    <div id="chartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;padding:20px;overflow:auto">
-        <h3 id="chartTitle" style="color:#007bff"></h3>
-        <div style="margin-bottom:10px">
-          <button onclick="loadChart('1d')">1D</button>
-          <button onclick="loadChart('7d')">7D</button>
-          <button onclick="loadChart('30d')">1M</button>
-          <button onclick="loadChart('90d')">3M</button>
-          <button onclick="loadChart('365')">1Y</button>
-          <button onclick="loadChart('max')">ALL</button>
-          <button onclick="toggleCandlestick()">Toggle Candlestick</button>
-          <button onclick="closeChart()">Close</button>
-        </div>
-        <canvas id="priceChart" height="400"></canvas>
-      </div>
+
+  <div id="chartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;padding:20px;overflow:auto">
+    <h3 id="chartTitle" style="color:#007bff"></h3>
+    <div style="margin-bottom:10px">
+      <button onclick="loadChart('1d')">1D</button>
+      <button onclick="loadChart('7d')">7D</button>
+      <button onclick="loadChart('30d')">1M</button>
+      <button onclick="loadChart('90d')">3M</button>
+      <button onclick="loadChart('365')">1Y</button>
+      <button onclick="loadChart('max')">ALL</button>
+      <button onclick="toggleCandlestick()">Toggle Candlestick</button>
+      <button onclick="closeChart()">Close</button>
+    </div>
+    <canvas id="priceChart" height="400"></canvas>
+  </div>
       
       <!-- Script for loading chart -->
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
       <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
       <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
@@ -291,6 +293,7 @@
       tbody.innerHTML = "";
       coins.forEach(coin => {
         const row = document.createElement("tr");
+row.onclick = () => showChartModal(coin.id, coin.name);
         const sparkline = `<canvas id="spark-${coin.id}" width="100" height="30"></canvas>`;
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
