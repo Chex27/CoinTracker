@@ -90,13 +90,22 @@ let isCandle = true;
 
 function loadChart(range) {
   currentRange = range;
-  const url = `/api/chart/${currentCoinId}?range=${range}`;
 
-  fetch(url)
+  const PAIR_MAP = {
+    bitcoin: "0xccb63225a7b19dcf66717e4d40c9a72b39331d61", // WBTC/USDC on Polygon
+    ethereum: "0x853ee4b2a13f8a742d64c8f088be7ba2131f670d", // WETH/USDC
+    tether: "0x6ff62bfb8c12109e8000935a6de54dad83a4f39f", // USDT/USDC on Polygon
+    solana: "0x2646F6A937fE2c1c0b58095bF09b42Cfc0aE858F"
+  };
+
+  const pairId = PAIR_MAP[currentCoinId.toLowerCase()];
+  if (!pairId) return alert(`No OHLC pair ID mapped for ${currentCoinId}.`);
+
+  fetch(`/api/ohlc/${pairId}?range=${range}`)
     .then(res => res.json())
     .then(data => {
       if (!data || !data.prices) {
-        alert("No chart data available.");
+        alert("No OHLC data found.");
         return;
       }
 
@@ -104,36 +113,22 @@ function loadChart(range) {
 
       const ctx = document.getElementById("priceChart").getContext("2d");
 
-      const labels = data.prices.map(p => new Date(p[0]));
-      const lineData = data.prices.map(p => ({ x: new Date(p[0]), y: p[1] }));
-
-      const candleData = data.prices.map(([t, price]) => ({
-        x: new Date(t),
-        o: price * 0.995,
-        h: price * 1.005,
-        l: price * 0.985,
-        c: price
+      const lineData = data.prices.map(p => ({ x: p.x, y: p.c }));
+      const candleData = data.prices.map(p => ({
+        x: p.x,
+        o: p.o,
+        h: p.h,
+        l: p.l,
+        c: p.c
       }));
 
       priceChart = new Chart(ctx, {
-        type: isCandle ? 'candlestick' : 'line',
+        type: isCandlestick ? 'candlestick' : 'line',
         data: {
-          labels: labels,
           datasets: [
-            isCandle
-              ? {
-                  label: `${currentCoinName} OHLC`,
-                  data: candleData,
-                  borderColor: "#00eaff"
-                }
-              : {
-                  label: `${currentCoinName} Price`,
-                  data: lineData,
-                  borderColor: "#00eaff",
-                  backgroundColor: "rgba(0,234,255,0.3)",
-                  fill: true,
-                  tension: 0.3
-                }
+            isCandlestick
+              ? { label: 'OHLC', data: candleData, borderColor: '#007bff' }
+              : { label: 'Price', data: lineData, borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.2)', fill: true }
           ]
         },
         options: {
@@ -150,25 +145,26 @@ function loadChart(range) {
                   month: 'MMM yyyy'
                 }
               },
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
+              ticks: { color: "#333" },
+              grid: { color: "#ddd" }
             },
             y: {
-              ticks: { color: "#fff" },
-              grid: { color: "#333" }
+              ticks: { color: "#333" },
+              grid: { color: "#ddd" }
             }
           },
           plugins: {
-            legend: { labels: { color: "#fff" } }
+            legend: { labels: { color: "#333" } }
           }
         }
       });
     })
     .catch(err => {
-      console.error("Error loading chart data:", err);
+      console.error("Chart Load Error:", err);
       alert("Failed to load chart data.");
     });
 }
+
 
 function closeChart() {
   document.getElementById("chartModal").style.display = "none";
