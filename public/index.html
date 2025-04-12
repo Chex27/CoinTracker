@@ -1,77 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HeckBit Wallet + Market Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeckBit Pro Dashboard</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
     body {
-      background: #f9f9f9;
-      color: #111;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #fff;
+      color: #111;
     }
     h1 {
-      font-size: 2.5rem;
       text-align: center;
-      color: #007bff;
-      margin: 20px 0 10px;
+      color: #2f54eb;
+      margin-top: 20px;
     }
     .container {
       padding: 20px;
     }
-    input, button {
-      font-size: 1rem;
-      padding: 8px 12px;
-      margin: 5px;
-      border-radius: 6px;
-      border: 1px solid #007bff;
-    }
-    input { width: 300px; }
-    button {
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover { background: #0056b3; }
-    #walletData {
-      margin-top: 15px;
-      background: #e9f5ff;
-      padding: 15px;
-      border-radius: 10px;
-    }
     #crypto-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 40px;
     }
     #crypto-table th, #crypto-table td {
-      border: 1px solid #ddd;
+      border: 1px solid #eee;
       padding: 12px;
+      text-align: right;
+    }
+    #crypto-table th {
+      background: #2f54eb;
+      color: #fff;
       text-align: center;
     }
-    #crypto-table th { background: #007bff; color: #fff; }
-    .positive { color: green; }
-    .negative { color: red; }
+    .positive { color: #00b386; }
+    .negative { color: #f5222d; }
+    #chartModal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #fff;
+      z-index: 9999;
+      padding: 20px;
+      display: none;
+    }
+    button {
+      padding: 8px 14px;
+      margin: 5px;
+      border-radius: 6px;
+      border: none;
+      background: #2f54eb;
+      color: white;
+      cursor: pointer;
+    }
+    canvas { max-height: 400px; }
   </style>
 </head>
 <body>
   <h1>HeckBit Wallet + Market Dashboard</h1>
   <div class="container">
-    <h3 style="color:#007bff">Track Wallet (Polygon)</h3>
-    <input id="walletInput" placeholder="Paste wallet address..." />
-    <button onclick="trackWallet()">Track</button>
-    <button onclick="connectWallet()">Connect Wallet</button>
-    <div id="walletData">Wallet data will appear here.</div>
-  </div>
-
-  <div class="container">
-    <h3 style="color:#007bff">Top 100 Coins</h3>
     <table id="crypto-table">
       <thead>
         <tr>
@@ -83,90 +74,69 @@
           <th>7d%</th>
           <th>Market Cap</th>
           <th>Volume</th>
-          <th>Sparkline</th>
+          <th>Last 7 Days</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <div id="chartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;padding:20px;overflow:auto">
-    <h3 id="chartTitle" style="color:#007bff"></h3>
+  <div id="chartModal">
+    <h3 id="chartTitle"></h3>
     <div style="margin-bottom:10px">
-      <button onclick="loadPolygonChart(currentCoinId, '1')">1s</button>
-      <button onclick="loadPolygonChart(currentCoinId, 'minute')">1m</button>
-      <button onclick="loadPolygonChart(currentCoinId, '5minute')">5m</button>
-      <button onclick="loadPolygonChart(currentCoinId, '15minute')">15m</button>
+      <button onclick="loadPolygonChart(currentCoinId, '1s')">1s</button>
+      <button onclick="loadPolygonChart(currentCoinId, '1min')">1m</button>
+      <button onclick="loadPolygonChart(currentCoinId, '5min')">5m</button>
+      <button onclick="loadPolygonChart(currentCoinId, '15min')">15m</button>
       <button onclick="closeChart()">Close</button>
     </div>
-    <canvas id="priceChart" height="400"></canvas>
+    <canvas id="priceChart"></canvas>
   </div>
 
   <script>
-    const PAIR_SYMBOL_MAP = {
-      bitcoin: "X:BTCUSD",
-      ethereum: "X:ETHUSD",
-      solana: "X:SOLUSD",
-      tether: "X:USDTUSD"
+    const POLYGON_API_KEY = "YOUR_POLYGON_KEY_HERE";
+    const SYMBOL_MAP = {
+      bitcoin: "BTC",
+      ethereum: "ETH",
+      tether: "USDT",
+      solana: "SOL"
     };
 
-    let currentCoinId = "bitcoin";
     let chartInterval;
     let priceChart;
+    let currentCoinId = "bitcoin";
 
-    async function loadPolygonChart(coinId, resolution = 'minute') {
-      const symbol = PAIR_SYMBOL_MAP[coinId];
-      if (!symbol) return alert("No symbol mapped for this coin.");
+    async function loadPolygonChart(coinId, interval) {
+      const symbol = SYMBOL_MAP[coinId];
+      if (!symbol) return alert("No symbol for " + coinId);
 
       clearInterval(chartInterval);
-      currentCoinId = coinId;
-      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} - ${resolution} Candles (Polygon.io)`;
       document.getElementById("chartModal").style.display = "block";
-
+      document.getElementById("chartTitle").innerText = `${symbol} - ${interval} Chart`;
       const ctx = document.getElementById("priceChart").getContext("2d");
       if (priceChart) priceChart.destroy();
 
       async function fetchData() {
-        const to = Math.floor(Date.now() / 1000);
-        const from = to - 60 * 60;
+        const to = Math.floor(Date.now());
+        const from = to - 24 * 60 * 60 * 1000;
+        const url = `https://api.polygon.io/v2/aggs/ticker/X:${symbol}USD/range/1/${interval}/${new Date(from).toISOString()}/${new Date(to).toISOString()}?adjusted=true&sort=asc&limit=500&apiKey=${POLYGON_API_KEY}`;
 
-        try {
-          const res = await fetch(`/api/polygon-chart?ticker=${symbol}&from=${from}&to=${to}&res=${resolution}`);
-          const json = await res.json();
-          if (!json.results) return;
+        const res = await fetch(url);
+        const json = await res.json();
+        const candles = json.results?.map(d => ({ x: d.t, o: d.o, h: d.h, l: d.l, c: d.c })) || [];
 
-          const candleData = json.results.map(p => ({
-            x: p.t,
-            o: p.o,
-            h: p.h,
-            l: p.l,
-            c: p.c
-          }));
-
-          priceChart = new Chart(ctx, {
-            type: 'candlestick',
-            data: {
-              datasets: [{
-                label: `${coinId} OHLC`,
-                data: candleData,
-                borderColor: '#007bff'
-              }]
+        priceChart = new Chart(ctx, {
+          type: 'candlestick',
+          data: { datasets: [{ label: symbol, data: candles }] },
+          options: {
+            responsive: true,
+            scales: {
+              x: { type: 'time', time: { tooltipFormat: 'HH:mm' } },
+              y: { beginAtZero: false }
             },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              scales: {
-                x: { type: 'time', time: { tooltipFormat: 'HH:mm:ss' } },
-                y: { beginAtZero: false }
-              },
-              plugins: {
-                legend: { display: false }
-              }
-            }
-          });
-        } catch (err) {
-          console.error("Polygon chart error:", err);
-        }
+            plugins: { legend: { display: false } }
+          }
+        });
       }
 
       await fetchData();
@@ -180,26 +150,44 @@
     }
 
     async function loadCoins() {
-      const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h,24h,7d");
+      const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=1h,24h,7d");
       const coins = await res.json();
       const tbody = document.querySelector("#crypto-table tbody");
       tbody.innerHTML = "";
       coins.forEach(coin => {
         const row = document.createElement("tr");
-        row.onclick = () => loadPolygonChart(coin.id, 'minute');
-        const sparkline = `<canvas id="spark-${coin.id}" width="100" height="30"></canvas>`;
+        row.onclick = () => loadPolygonChart(coin.id, '1min');
+
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
-          <td>${coin.name}</td>
+          <td style="text-align:left">${coin.name}</td>
           <td>$${coin.current_price.toFixed(2)}</td>
           <td class="${coin.price_change_percentage_1h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
           <td class="${coin.price_change_percentage_24h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
           <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
-          <td>${sparkline}</td>
+          <td><canvas id="spark-${coin.id}" width="100" height="30"></canvas></td>
         `;
         tbody.appendChild(row);
+        drawSparkline(coin.id, coin.sparkline_in_7d.price);
+      });
+    }
+
+    function drawSparkline(id, data) {
+      const ctx = document.getElementById(`spark-${id}`).getContext("2d");
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map((_, i) => i),
+          datasets: [{ data, borderColor: '#d946ef', backgroundColor: 'rgba(217,70,239,0.1)', fill: true, tension: 0.3, pointRadius: 0 }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          responsive: false,
+          maintainAspectRatio: false
+        }
       });
     }
 
