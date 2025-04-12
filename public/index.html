@@ -111,201 +111,105 @@
   <div id="chartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;padding:20px;overflow:auto">
     <h3 id="chartTitle" style="color:#007bff"></h3>
     <div style="margin-bottom:10px">
-      <button onclick="loadChart('1d')">1D</button>
-      <button onclick="loadChart('7d')">7D</button>
-      <button onclick="loadChart('30d')">1M</button>
-      <button onclick="loadChart('90d')">3M</button>
-      <button onclick="loadChart('365')">1Y</button>
-      <button onclick="loadChart('max')">ALL</button>
-      <button onclick="toggleCandlestick()">Toggle Candlestick</button>
+      <button onclick="loadDexChart(currentCoinId)">Live</button>
       <button onclick="closeChart()">Close</button>
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
-      
-      <!-- Script for loading chart -->
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
-      <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
-      <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
-      
-      <script>
-      let isCandlestick = true;
-      let priceChart;
-      let currentCoinId = "bitcoin";
-      let currentRange = "365";
-      
-      function showChartModal(coinId, coinName) {
-        currentCoinId = coinId;
-        document.getElementById("chartTitle").innerText = `${coinName} Price Chart`;
-        document.getElementById("chartModal").style.display = "block";
-        loadChart(currentRange);
-      }
-      
-      function closeChart() {
-        document.getElementById("chartModal").style.display = "none";
-        if (priceChart) priceChart.destroy();
-      }
-      
-      function toggleCandlestick() {
-        isCandlestick = !isCandlestick;
-        loadChart(currentRange);
-      }
-      
-      async function loadChart(range) {
-  currentRange = range;
 
-  const PAIR_MAP = {
-    bitcoin: "0xccb63225a7b19dcf66717e4d40c9a72b39331d61", // WBTC/USDC on Polygon
-    ethereum: "0x853ee4b2a13f8a742d64c8f088be7ba2131f670d", // WETH/USDC
-    tether: "0x6ff62bfb8c12109e8000935a6de54dad83a4f39f", // USDT pair
-    solana: "0x2646F6A937fE2c1c0b58095bF09b42Cfc0aE858F"  // Add more pairs here
-  };
+  <script>
+    const DEX_API = "https://api.dexscreener.com/latest/dex/pairs";
+    const PAIR_MAP = {
+      bitcoin: "polygon/0xccb63225a7b19dcf66717e4d40c9a72b39331d61",
+      ethereum: "polygon/0x853ee4b2a13f8a742d64c8f088be7ba2131f670d",
+      solana: "polygon/0x2646F6A937fE2c1c0b58095bF09b42Cfc0aE858F",
+      tether: "polygon/0x6ff62bfb8c12109e8000935a6de54dad83a4f39f"
+    };
 
-  const pairId = PAIR_MAP[currentCoinId.toLowerCase()];
-  if (!pairId) return alert(`No OHLC pair ID mapped for ${currentCoinId}.`);
+    let currentCoinId = "bitcoin";
+    let chartInterval;
+    let priceChart;
 
-  const res = await fetch(`/api/ohlc/${pairId}?range=${range}`);
-  const data = await res.json();
+    async function loadDexChart(coinId) {
+      const pairPath = PAIR_MAP[coinId];
+      if (!pairPath) return alert("No Dexscreener pair mapped for this coin.");
 
-  if (priceChart) priceChart.destroy();
-  const ctx = document.getElementById("priceChart").getContext("2d");
+      clearInterval(chartInterval);
+      currentCoinId = coinId;
+      const chartTitle = document.getElementById("chartTitle");
+      chartTitle.innerText = `${coinId.toUpperCase()} - Live Chart (Dexscreener)`;
+      document.getElementById("chartModal").style.display = "block";
 
-  const lineData = data.prices.map(p => ({ x: p.x, y: p.c }));
-  const candleData = data.prices.map(p => ({
-    x: p.x,
-    o: p.o,
-    h: p.h,
-    l: p.l,
-    c: p.c
-  }));
+      const ctx = document.getElementById("priceChart").getContext("2d");
+      if (priceChart) priceChart.destroy();
 
-  priceChart = new Chart(ctx, {
-    type: isCandlestick ? 'candlestick' : 'line',
-    data: {
-      datasets: [
-        isCandlestick
-          ? { label: 'OHLC', data: candleData, borderColor: '#007bff' }
-          : { label: 'Price', data: lineData, borderColor: '#007bff', fill: true, backgroundColor: 'rgba(0,123,255,0.1)', tension: 0.3 }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          type: 'time',
-          time: {
-            tooltipFormat: 'MMM dd HH:mm',
-            displayFormats: {
-              hour: 'HH:mm',
-              day: 'MMM dd',
-              month: 'MMM yyyy'
+      let chartData = [];
+      priceChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: `${coinId} Price (Dexscreener)`,
+              data: chartData,
+              borderColor: "#00eaff",
+              backgroundColor: "rgba(0,234,255,0.2)",
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: "time",
+              time: { unit: "minute" },
+              ticks: { color: "#333" },
+              grid: { color: "#eee" }
+            },
+            y: {
+              ticks: { color: "#333" },
+              grid: { color: "#eee" }
             }
           },
-          ticks: { color: '#333' },
-          grid: { color: '#ddd' }
-        },
-        y: {
-          ticks: { color: '#333' },
-          grid: { color: '#ddd' }
+          plugins: {
+            legend: { labels: { color: "#333" } }
+          }
         }
-      },
-      plugins: {
-        legend: { labels: { color: '#333' } }
-      }
-    }
-  });
-}
+      });
 
-      </script>
-      
-  <script>
-    async function trackWallet(address = null) {
-      const input = document.getElementById('walletInput');
-      const wallet = address || input.value.trim();
-      const output = document.getElementById('walletData');
-
-      if (!wallet) return alert('Please enter a wallet address.');
-
-      output.innerHTML = '<em>Fetching balances... please wait \u23F3</em>';
-
-      const contractAddresses = [
-        {
-          symbol: 'WETH',
-          address: '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619',
-          logo: 'https://assets.coingecko.com/coins/images/2518/small/weth.png'
-        },
-        {
-          symbol: 'USDC',
-          address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174',
-          logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png'
-        },
-        {
-          symbol: 'DAI',
-          address: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
-          logo: 'https://assets.coingecko.com/coins/images/9956/small/4943.png'
-        }
-      ];
-
-      let html = `<strong>Address:</strong> ${wallet}<br><br>`;
-      let totalUSD = 0;
-      const tokenData = [];
-
-      for (const token of contractAddresses) {
+      async function updateChart() {
         try {
-          const res = await fetch(`https://api.polygonscan.com/api?module=account&action=tokenbalance&contractaddress=${token.address}&address=${wallet}&tag=latest&apikey=YOUR_API_KEY`);
+          const res = await fetch(`${DEX_API}/${pairPath}`);
           const data = await res.json();
-          const balance = parseFloat(data.result) / 1e18;
-
-          const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${token.symbol.toLowerCase()}&vs_currencies=usd`);
-          const priceData = await priceRes.json();
-          const price = priceData[token.symbol.toLowerCase()]?.usd || 0;
-
-          const usdValue = balance * price;
-          totalUSD += usdValue;
-
-          tokenData.push({ ...token, balance, usdValue });
+          const price = parseFloat(data.pair.priceUsd);
+          chartData.push({ x: new Date(), y: price });
+          if (chartData.length > 60) chartData.shift();
+          priceChart.update();
         } catch (err) {
-          console.error(`Error fetching ${token.symbol}:`, err);
+          console.error("Dexscreener Chart Error:", err);
         }
       }
 
-      for (const token of tokenData) {
-        const percent = ((token.usdValue / totalUSD) * 100).toFixed(1);
-        html += `
-          <div>
-            <img src="${token.logo}" width="20" style="vertical-align:middle;margin-right:5px">
-            <strong>${token.symbol}:</strong> ${token.balance.toFixed(4)} ($${token.usdValue.toFixed(2)})
-            <span style="color:#555;font-size:0.9rem">(${percent}% of portfolio)</span>
-            <a href="https://quickswap.exchange/#/swap?outputCurrency=${token.address}" target="_blank">Trade</a>
-          </div>`;
-      }
-
-      html += `<br><strong>Total Portfolio Value:</strong> $${totalUSD.toFixed(2)}`;
-      output.innerHTML = html;
+      updateChart();
+      chartInterval = setInterval(updateChart, 15000); // every 15s
     }
 
-    async function connectWallet() {
-      if (!window.ethereum) return alert('MetaMask is not installed');
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (accounts.length) {
-          document.getElementById('walletInput').value = accounts[0];
-          trackWallet(accounts[0]);
-        }
-      } catch (error) {
-        console.error('MetaMask connection error:', error);
-      }
+    function closeChart() {
+      document.getElementById("chartModal").style.display = "none";
+      if (priceChart) priceChart.destroy();
+      clearInterval(chartInterval);
     }
 
     async function loadCoins() {
-      const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h,24h,7d');
+      const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=1h,24h,7d");
       const coins = await res.json();
       const tbody = document.querySelector("#crypto-table tbody");
       tbody.innerHTML = "";
       coins.forEach(coin => {
         const row = document.createElement("tr");
-row.onclick = () => showChartModal(coin.id, coin.name);
+        row.onclick = () => loadDexChart(coin.id);
         const sparkline = `<canvas id="spark-${coin.id}" width="100" height="30"></canvas>`;
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
@@ -319,39 +223,10 @@ row.onclick = () => showChartModal(coin.id, coin.name);
           <td>${sparkline}</td>
         `;
         tbody.appendChild(row);
-
-        setTimeout(() => drawSparkline(coin.id, coin.sparkline_in_7d.price), 0);
       });
     }
 
-    function drawSparkline(id, prices) {
-      const ctx = document.getElementById(`spark-${id}`).getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: prices.map((_, i) => i),
-          datasets: [{
-            data: prices,
-            borderColor: '#007bff',
-            backgroundColor: 'rgba(0,123,255,0.1)',
-            borderWidth: 1,
-            pointRadius: 0,
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: { x: { display: false }, y: { display: false } },
-          elements: { line: { tension: 0.4 } },
-          responsive: false,
-          maintainAspectRatio: false
-        }
-      });
-    }
-
-    loadCoins();
-    setInterval(loadCoins, 30000); // refresh every 30s
+    window.onload = loadCoins;
   </script>
 </body>
 </html>
