@@ -6,7 +6,6 @@
   <title>HeckBit Pro Dashboard</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
@@ -58,11 +57,37 @@
       cursor: pointer;
     }
     canvas { max-height: 400px; }
+    .metrics, .trending, .sentiment {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f0f5ff;
+      border-radius: 8px;
+    }
+    #loadMoreBtn {
+      display: block;
+      margin: 20px auto;
+    }
   </style>
 </head>
 <body>
   <h1>HeckBit Wallet + Market Dashboard</h1>
   <div class="container">
+    <div class="metrics">
+      <h3>Market Metrics</h3>
+      <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
+      <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
+    </div>
+
+    <div class="sentiment">
+      <h3>Fear & Greed Index</h3>
+      <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
+    </div>
+
+    <div class="trending">
+      <h3>Trending Coins</h3>
+      <ul id="trendingList"></ul>
+    </div>
+
     <table id="crypto-table">
       <thead>
         <tr>
@@ -79,85 +104,74 @@
       </thead>
       <tbody></tbody>
     </table>
+    <button id="loadMoreBtn" onclick="loadMore()">Load More</button>
   </div>
 
   <div id="chartModal">
     <h3 id="chartTitle"></h3>
     <div style="margin-bottom:10px">
-      <button onclick="loadPolygonChart(currentCoinId, '1s')">1s</button>
-      <button onclick="loadPolygonChart(currentCoinId, '1min')">1m</button>
-      <button onclick="loadPolygonChart(currentCoinId, '5min')">5m</button>
-      <button onclick="loadPolygonChart(currentCoinId, '15min')">15m</button>
+      <button onclick="loadChart(currentCoinId, '1')">1D</button>
+      <button onclick="loadChart(currentCoinId, '7')">7D</button>
+      <button onclick="loadChart(currentCoinId, '30')">1M</button>
+      <button onclick="loadChart(currentCoinId, '365')">1Y</button>
+      <button onclick="loadChart(currentCoinId, 'max')">All</button>
       <button onclick="closeChart()">Close</button>
     </div>
     <canvas id="priceChart"></canvas>
   </div>
 
   <script>
-    const POLYGON_API_KEY = "YOUR_POLYGON_KEY_HERE";
-    const SYMBOL_MAP = {
-      bitcoin: "BTC",
-      ethereum: "ETH",
-      tether: "USDT",
-      solana: "SOL"
-    };
-
-    let chartInterval;
-    let priceChart;
     let currentCoinId = "bitcoin";
+    let priceChart;
+    let currentPage = 1;
 
-    async function loadPolygonChart(coinId, interval) {
-      const symbol = SYMBOL_MAP[coinId];
-      if (!symbol) return alert("No symbol for " + coinId);
-
-      clearInterval(chartInterval);
-      document.getElementById("chartModal").style.display = "block";
-      document.getElementById("chartTitle").innerText = `${symbol} - ${interval} Chart`;
+    async function loadChart(coinId, days) {
+      currentCoinId = coinId;
       const ctx = document.getElementById("priceChart").getContext("2d");
+      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} - ${days} Day Chart`;
+      document.getElementById("chartModal").style.display = "block";
       if (priceChart) priceChart.destroy();
 
-      async function fetchData() {
-        const to = Math.floor(Date.now());
-        const from = to - 24 * 60 * 60 * 1000;
-        const url = `https://api.polygon.io/v2/aggs/ticker/X:${symbol}USD/range/1/${interval}/${new Date(from).toISOString()}/${new Date(to).toISOString()}?adjusted=true&sort=asc&limit=500&apiKey=${POLYGON_API_KEY}`;
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
+      const json = await res.json();
+      const prices = json.prices.map(p => ({ x: p[0], y: p[1] }));
 
-        const res = await fetch(url);
-        const json = await res.json();
-        const candles = json.results?.map(d => ({ x: d.t, o: d.o, h: d.h, l: d.l, c: d.c })) || [];
-
-        priceChart = new Chart(ctx, {
-          type: 'candlestick',
-          data: { datasets: [{ label: symbol, data: candles }] },
-          options: {
-            responsive: true,
-            scales: {
-              x: { type: 'time', time: { tooltipFormat: 'HH:mm' } },
-              y: { beginAtZero: false }
-            },
-            plugins: { legend: { display: false } }
-          }
-        });
-      }
-
-      await fetchData();
-      chartInterval = setInterval(fetchData, 15000);
+      priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: `${coinId} Price`,
+            data: prices,
+            borderColor: '#2f54eb',
+            backgroundColor: 'rgba(47,84,235,0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { type: 'time', time: { tooltipFormat: 'MMM dd' } },
+            y: { beginAtZero: false }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
     }
 
     function closeChart() {
       document.getElementById("chartModal").style.display = "none";
       if (priceChart) priceChart.destroy();
-      clearInterval(chartInterval);
     }
 
-    async function loadCoins() {
-      const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=1h,24h,7d");
+    async function loadCoins(page = 1) {
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
       const coins = await res.json();
       const tbody = document.querySelector("#crypto-table tbody");
-      tbody.innerHTML = "";
+
       coins.forEach(coin => {
         const row = document.createElement("tr");
-        row.onclick = () => loadPolygonChart(coin.id, '1min');
-
+        row.onclick = () => loadChart(coin.id, '7');
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
           <td style="text-align:left">${coin.name}</td>
@@ -180,7 +194,14 @@
         type: 'line',
         data: {
           labels: data.map((_, i) => i),
-          datasets: [{ data, borderColor: '#d946ef', backgroundColor: 'rgba(217,70,239,0.1)', fill: true, tension: 0.3, pointRadius: 0 }]
+          datasets: [{
+            data,
+            borderColor: '#d946ef',
+            backgroundColor: 'rgba(217,70,239,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0
+          }]
         },
         options: {
           plugins: { legend: { display: false } },
@@ -191,7 +212,43 @@
       });
     }
 
-    window.onload = loadCoins;
+    function loadMore() {
+      currentPage++;
+      loadCoins(currentPage);
+    }
+
+    async function loadMetrics() {
+      const res = await fetch("https://api.coingecko.com/api/v3/global");
+      const json = await res.json();
+      document.getElementById("marketCap").innerText = `$${Number(json.data.total_market_cap.usd).toLocaleString()}`;
+      document.getElementById("marketCapChange").innerText = `${json.data.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
+    }
+
+    async function loadTrending() {
+      const res = await fetch("https://api.coingecko.com/api/v3/search/trending");
+      const json = await res.json();
+      const list = document.getElementById("trendingList");
+      list.innerHTML = "";
+      json.coins.forEach(c => {
+        const li = document.createElement("li");
+        li.innerText = `${c.item.name} (${c.item.symbol})`;
+        list.appendChild(li);
+      });
+    }
+
+    async function loadFearGreed() {
+      const res = await fetch("https://api.alternative.me/fng/");
+      const json = await res.json();
+      document.getElementById("fearValue").innerText = json.data[0].value;
+      document.getElementById("fearLabel").innerText = json.data[0].value_classification;
+    }
+
+    window.onload = () => {
+      loadCoins();
+      loadMetrics();
+      loadTrending();
+      loadFearGreed();
+    };
   </script>
 </body>
 </html>
