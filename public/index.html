@@ -6,7 +6,6 @@
   <title>HeckBit Wallet + Market Dashboard</title>
   <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
   <style>
@@ -16,7 +15,6 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 0;
-      transition: all 0.3s ease;
     }
     h1 {
       font-size: 2.5rem;
@@ -34,17 +32,13 @@
       border-radius: 6px;
       border: 1px solid #007bff;
     }
-    input {
-      width: 300px;
-    }
+    input { width: 300px; }
     button {
       background: #007bff;
       color: white;
       cursor: pointer;
     }
-    button:hover {
-      background: #0056b3;
-    }
+    button:hover { background: #0056b3; }
     #walletData {
       margin-top: 15px;
       background: #e9f5ff;
@@ -61,21 +55,9 @@
       padding: 12px;
       text-align: center;
     }
-    #crypto-table th {
-      background: #007bff;
-      color: #fff;
-    }
+    #crypto-table th { background: #007bff; color: #fff; }
     .positive { color: green; }
     .negative { color: red; }
-    @media (max-width: 600px) {
-      input, button {
-        width: 100% !important;
-        margin-bottom: 10px;
-      }
-      .container {
-        padding: 10px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -111,89 +93,84 @@
   <div id="chartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:9999;padding:20px;overflow:auto">
     <h3 id="chartTitle" style="color:#007bff"></h3>
     <div style="margin-bottom:10px">
-      <button onclick="loadDexChart(currentCoinId)">Live</button>
+      <button onclick="loadPolygonChart(currentCoinId, '1')">1s</button>
+      <button onclick="loadPolygonChart(currentCoinId, 'minute')">1m</button>
+      <button onclick="loadPolygonChart(currentCoinId, '5minute')">5m</button>
+      <button onclick="loadPolygonChart(currentCoinId, '15minute')">15m</button>
       <button onclick="closeChart()">Close</button>
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
 
   <script>
-    const DEX_API = "https://api.dexscreener.com/latest/dex/pairs";
-    const PAIR_MAP = {
-      bitcoin: "polygon/0xccb63225a7b19dcf66717e4d40c9a72b39331d61",
-      ethereum: "polygon/0x853ee4b2a13f8a742d64c8f088be7ba2131f670d",
-      solana: "polygon/0x2646F6A937fE2c1c0b58095bF09b42Cfc0aE858F",
-      tether: "polygon/0x6ff62bfb8c12109e8000935a6de54dad83a4f39f"
+    const PAIR_SYMBOL_MAP = {
+      bitcoin: "X:BTCUSD",
+      ethereum: "X:ETHUSD",
+      solana: "X:SOLUSD",
+      tether: "X:USDTUSD"
     };
 
     let currentCoinId = "bitcoin";
     let chartInterval;
     let priceChart;
 
-    async function loadDexChart(coinId) {
-      const pairPath = PAIR_MAP[coinId];
-      if (!pairPath) return alert("No Dexscreener pair mapped for this coin.");
+    async function loadPolygonChart(coinId, resolution = 'minute') {
+      const symbol = PAIR_SYMBOL_MAP[coinId];
+      if (!symbol) return alert("No symbol mapped for this coin.");
 
       clearInterval(chartInterval);
       currentCoinId = coinId;
-      const chartTitle = document.getElementById("chartTitle");
-      chartTitle.innerText = `${coinId.toUpperCase()} - Live Chart (Dexscreener)`;
+      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} - ${resolution} Candles (Polygon.io)`;
       document.getElementById("chartModal").style.display = "block";
 
       const ctx = document.getElementById("priceChart").getContext("2d");
       if (priceChart) priceChart.destroy();
 
-      let chartData = [];
-      priceChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          datasets: [
-            {
-              label: `${coinId} Price (Dexscreener)`,
-              data: chartData,
-              borderColor: "#00eaff",
-              backgroundColor: "rgba(0,234,255,0.2)",
-              fill: true,
-              tension: 0.3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              type: "time",
-              time: { unit: "minute" },
-              ticks: { color: "#333" },
-              grid: { color: "#eee" }
-            },
-            y: {
-              ticks: { color: "#333" },
-              grid: { color: "#eee" }
-            }
-          },
-          plugins: {
-            legend: { labels: { color: "#333" } }
-          }
-        }
-      });
+      async function fetchData() {
+        const to = Math.floor(Date.now() / 1000);
+        const from = to - 60 * 60;
 
-      async function updateChart() {
         try {
-          const res = await fetch(`${DEX_API}/${pairPath}`);
-          const data = await res.json();
-          const price = parseFloat(data.pair.priceUsd);
-          chartData.push({ x: new Date(), y: price });
-          if (chartData.length > 60) chartData.shift();
-          priceChart.update();
+          const res = await fetch(`/api/polygon-chart?ticker=${symbol}&from=${from}&to=${to}&res=${resolution}`);
+          const json = await res.json();
+          if (!json.results) return;
+
+          const candleData = json.results.map(p => ({
+            x: p.t,
+            o: p.o,
+            h: p.h,
+            l: p.l,
+            c: p.c
+          }));
+
+          priceChart = new Chart(ctx, {
+            type: 'candlestick',
+            data: {
+              datasets: [{
+                label: `${coinId} OHLC`,
+                data: candleData,
+                borderColor: '#007bff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { type: 'time', time: { tooltipFormat: 'HH:mm:ss' } },
+                y: { beginAtZero: false }
+              },
+              plugins: {
+                legend: { display: false }
+              }
+            }
+          });
         } catch (err) {
-          console.error("Dexscreener Chart Error:", err);
+          console.error("Polygon chart error:", err);
         }
       }
 
-      updateChart();
-      chartInterval = setInterval(updateChart, 15000); // every 15s
+      await fetchData();
+      chartInterval = setInterval(fetchData, 15000);
     }
 
     function closeChart() {
@@ -209,7 +186,7 @@
       tbody.innerHTML = "";
       coins.forEach(coin => {
         const row = document.createElement("tr");
-        row.onclick = () => loadDexChart(coin.id);
+        row.onclick = () => loadPolygonChart(coin.id, 'minute');
         const sparkline = `<canvas id="spark-${coin.id}" width="100" height="30"></canvas>`;
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
