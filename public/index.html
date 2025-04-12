@@ -56,7 +56,7 @@
       color: white;
       cursor: pointer;
     }
-    canvas { max-height: 400px; }
+    canvas { width: 100% !important; height: auto !important; }
     .metrics, .trending, .sentiment {
       margin: 20px 0;
       padding: 15px;
@@ -181,7 +181,7 @@
           <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
-          <td><canvas id="spark-${coin.id}" width="100" height="30"></canvas></td>
+          <td><canvas id="spark-${coin.id}" height="30"></canvas></td>
         `;
         tbody.appendChild(row);
         drawSparkline(coin.id, coin.sparkline_in_7d.price);
@@ -206,7 +206,7 @@
         options: {
           plugins: { legend: { display: false } },
           scales: { x: { display: false }, y: { display: false } },
-          responsive: false,
+          responsive: true,
           maintainAspectRatio: false
         }
       });
