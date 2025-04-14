@@ -4,69 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HeckBit Pro Dashboard</title>
-  <link rel="icon" href="data:,">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
   <style>
     body {
-      margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
       background: #fff;
       color: #111;
     }
     h1 {
       text-align: center;
       color: #2f54eb;
-      margin-top: 20px;
+      margin: 20px 0;
     }
     .container {
       padding: 20px;
     }
-    #crypto-table {
+    .metrics, .trending, .sentiment {
+      background: #f0f5ff;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    table {
       width: 100%;
       border-collapse: collapse;
     }
-    #crypto-table th, #crypto-table td {
-      border: 1px solid #eee;
-      padding: 12px;
-      text-align: right;
-    }
-    #crypto-table th {
-      background: #2f54eb;
-      color: #fff;
+    th, td {
+      padding: 10px;
       text-align: center;
+      border: 1px solid #eee;
     }
-    .positive { color: #00b386; }
-    .negative { color: #f5222d; }
+    th {
+      background: #2f54eb;
+      color: white;
+    }
+    .positive { color: green; }
+    .negative { color: red; }
     #chartModal {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: #fff;
-      z-index: 9999;
-      padding: 20px;
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 1000;
+      padding: 20px;
     }
-    button {
-      padding: 8px 14px;
+    .chart-controls button {
       margin: 5px;
-      border-radius: 6px;
+      padding: 8px 12px;
+      border-radius: 4px;
       border: none;
       background: #2f54eb;
       color: white;
       cursor: pointer;
     }
-    canvas { width: 100% !important; height: auto !important; }
-    .metrics, .trending, .sentiment {
-      margin: 20px 0;
-      padding: 15px;
-      background: #f0f5ff;
-      border-radius: 8px;
-    }
     #loadMoreBtn {
       display: block;
       margin: 20px auto;
+      padding: 10px 20px;
+      background: #2f54eb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
+    @media (max-width: 768px) {
+    td:nth-child(3),  /* Symbol */
+    td:nth-child(7),  /* Market Cap */
+    td:nth-child(8),  /* Volume */
+    td:nth-child(9),  /* Circulating Supply */
+    th:nth-child(3),
+    th:nth-child(7),
+    th:nth-child(8),
+    th:nth-child(9) {
+      display: none;
+    }
+  }
   </style>
 </head>
 <body>
@@ -77,12 +95,10 @@
       <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
       <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
     </div>
-
     <div class="sentiment">
       <h3>Fear & Greed Index</h3>
       <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
     </div>
-
     <div class="trending">
       <h3>Trending Coins</h3>
       <ul id="trendingList"></ul>
@@ -106,10 +122,33 @@
     </table>
     <button id="loadMoreBtn" onclick="loadMore()">Load More</button>
   </div>
-
+  <div class="container" style="margin-top: 30px;">
+    <h3>💼 Mini Portfolio Tracker</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <input id="coinInput" placeholder="Coin ID (e.g. bitcoin)" />
+      <input id="buyPriceInput" placeholder="Buy Price" type="number" />
+      <input id="quantityInput" placeholder="Quantity" type="number" />
+      <button onclick="addHolding()">Add</button>
+    </div>
+    <table id="portfolioTable" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#2f54eb;color:#fff;">
+          <th>Coin</th>
+          <th>Buy Price</th>
+          <th>Current Price</th>
+          <th>Quantity</th>
+          <th>Value</th>
+          <th>P/L</th>
+          <th>% Change</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  
   <div id="chartModal">
     <h3 id="chartTitle"></h3>
-    <div style="margin-bottom:10px">
+    <div class="chart-controls">
       <button onclick="loadChart(currentCoinId, '1')">1D</button>
       <button onclick="loadChart(currentCoinId, '7')">7D</button>
       <button onclick="loadChart(currentCoinId, '30')">1M</button>
@@ -117,75 +156,60 @@
       <button onclick="loadChart(currentCoinId, 'max')">All</button>
       <button onclick="closeChart()">Close</button>
     </div>
-    <canvas id="priceChart"></canvas>
+    <canvas id="priceChart" height="400"></canvas>
   </div>
-
+  <div class="container" style="margin-top: 30px;">
+    <h3>📢 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
+    <input 
+      type="text" 
+      id="tweetSearch" 
+      placeholder="Enter coin (e.g. ETH, SOL, DOGE)" 
+      onkeyup="updateTweets(event)" 
+      style="padding:8px;width:300px;margin-bottom:10px;border:1px solid #ccc;border-radius:5px;"
+    />
+    <div id="tweetFeed">
+      <iframe 
+        id="tweetIframe" 
+        width="100%" 
+        height="500" 
+        style="border:1px solid #eee;border-radius:8px;" 
+        src="https://nitter.net/search?f=tweets&q=bitcoin"
+      ></iframe>
+    </div>
+  </div>
+  
+  
   <script>
+    let currentPage = 1;
     let currentCoinId = "bitcoin";
     let priceChart;
-    let currentPage = 1;
-
-    async function loadChart(coinId, days) {
-      currentCoinId = coinId;
-      const ctx = document.getElementById("priceChart").getContext("2d");
-      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} - ${days} Day Chart`;
-      document.getElementById("chartModal").style.display = "block";
-      if (priceChart) priceChart.destroy();
-
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
-      const json = await res.json();
-      const prices = json.prices.map(p => ({ x: p[0], y: p[1] }));
-
-      priceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets: [{
-            label: `${coinId} Price`,
-            data: prices,
-            borderColor: '#2f54eb',
-            backgroundColor: 'rgba(47,84,235,0.1)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { type: 'time', time: { tooltipFormat: 'MMM dd' } },
-            y: { beginAtZero: false }
-          },
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
-
-    function closeChart() {
-      document.getElementById("chartModal").style.display = "none";
-      if (priceChart) priceChart.destroy();
-    }
 
     async function loadCoins(page = 1) {
       const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
       const coins = await res.json();
       const tbody = document.querySelector("#crypto-table tbody");
-
       coins.forEach(coin => {
         const row = document.createElement("tr");
-        row.onclick = () => loadChart(coin.id, '7');
+        row.onclick = () => loadChart(coin.id, '1');
         row.innerHTML = `
           <td><img src="${coin.image}" width="24"></td>
-          <td style="text-align:left">${coin.name}</td>
+          <td>${coin.name}</td>
           <td>$${coin.current_price.toFixed(2)}</td>
           <td class="${coin.price_change_percentage_1h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
           <td class="${coin.price_change_percentage_24h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
           <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
-          <td><canvas id="spark-${coin.id}" height="30"></canvas></td>
+          <td><canvas id="spark-${coin.id}" width="180" height="30"></canvas></td>
         `;
         tbody.appendChild(row);
         drawSparkline(coin.id, coin.sparkline_in_7d.price);
       });
+    }
+
+    function loadMore() {
+      currentPage++;
+      loadCoins(currentPage);
     }
 
     function drawSparkline(id, data) {
@@ -194,27 +218,43 @@
         type: 'line',
         data: {
           labels: data.map((_, i) => i),
-          datasets: [{
-            data,
-            borderColor: '#d946ef',
-            backgroundColor: 'rgba(217,70,239,0.1)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 0
-          }]
+          datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
         },
         options: {
           plugins: { legend: { display: false } },
           scales: { x: { display: false }, y: { display: false } },
-          responsive: true,
+          responsive: false,
           maintainAspectRatio: false
         }
       });
     }
 
-    function loadMore() {
-      currentPage++;
-      loadCoins(currentPage);
+    async function loadChart(coinId, days) {
+      currentCoinId = coinId;
+      const ctx = document.getElementById("priceChart").getContext("2d");
+      document.getElementById("chartModal").style.display = "block";
+      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} Chart`;
+
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
+      const json = await res.json();
+      const prices = json.prices.map(p => ({ x: p[0], y: p[1] }));
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{ label: coinId, data: prices, borderColor: '#2f54eb', fill: true, tension: 0.3 }]
+        },
+        options: {
+          scales: { x: { type: 'time', time: { unit: 'day' } }, y: { beginAtZero: false } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function closeChart() {
+      document.getElementById("chartModal").style.display = "none";
     }
 
     async function loadMetrics() {
@@ -249,6 +289,72 @@
       loadTrending();
       loadFearGreed();
     };
+    function updateTweets(e) {
+  if (e.key === "Enter") {
+    const query = document.getElementById("tweetSearch").value.trim().toLowerCase() || "bitcoin";
+    document.getElementById("tweetTopic").innerText = query.toUpperCase();
+
+    // Use a working Nitter instance
+    const fallbackNitter = [
+      'https://nitter.net',
+      'https://nitter.privacydev.net',
+      'https://nitter.snopyta.org'
+    ];
+
+    // Try first instance
+    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
+  }
+}
+const portfolio = [];
+
+async function addHolding() {
+  const coin = document.getElementById("coinInput").value.toLowerCase();
+  const buyPrice = parseFloat(document.getElementById("buyPriceInput").value);
+  const quantity = parseFloat(document.getElementById("quantityInput").value);
+
+  if (!coin || isNaN(buyPrice) || isNaN(quantity)) {
+    alert("Please enter valid coin, price, and quantity.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
+    const data = await res.json();
+    const currentPrice = data[coin]?.usd;
+
+    if (!currentPrice) throw new Error("Coin not found");
+
+    portfolio.push({ coin, buyPrice, quantity, currentPrice });
+    renderPortfolio();
+  } catch (err) {
+    alert("Failed to fetch coin price. Please check the coin ID.");
+    console.error(err);
+  }
+}
+
+function renderPortfolio() {
+  const tbody = document.querySelector("#portfolioTable tbody");
+  tbody.innerHTML = "";
+
+  portfolio.forEach(p => {
+    const value = p.currentPrice * p.quantity;
+    const profit = (p.currentPrice - p.buyPrice) * p.quantity;
+    const percent = ((p.currentPrice - p.buyPrice) / p.buyPrice) * 100;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${p.coin}</td>
+      <td>$${p.buyPrice.toFixed(2)}</td>
+      <td>$${p.currentPrice.toFixed(2)}</td>
+      <td>${p.quantity}</td>
+      <td>$${value.toFixed(2)}</td>
+      <td class="${profit >= 0 ? 'positive' : 'negative'}">$${profit.toFixed(2)}</td>
+      <td class="${percent >= 0 ? 'positive' : 'negative'}">${percent.toFixed(2)}%</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
   </script>
 </body>
 </html>
