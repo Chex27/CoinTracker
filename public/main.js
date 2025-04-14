@@ -40,6 +40,7 @@ function renderTable(data) {
 
   data.forEach(coin => {
     const row = document.createElement("tr");
+    row.classList.add("hover-row");
     row.onclick = () => showChart(coin.id, coin.name);
     row.innerHTML = `
       <td><img src="${coin.image}" width="24"></td>
@@ -95,24 +96,22 @@ async function loadChart(range = '1D') {
   const granularity = granularityMap[range] || 'day';
   const now = new Date();
   const to = now.toISOString();
-  const from = new Date(now.setDate(now.getDate() - 30)).toISOString();
+  const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
 
-  const url = `https://api.polygon.io/v2/aggs/ticker/X:${currentCoinId.toUpperCase()}USD/range/1/${granularity}/${from}/${to}?adjusted=true&sort=asc&apiKey=${POLYGON_API_KEY}`;
+  const url = `/api/polygon/${currentCoinId}/${range}`;
 
   try {
     const response = await fetch(url);
-    const { results } = await response.json();
+    const { prices } = await response.json();
     const ctx = document.getElementById("priceChart").getContext("2d");
     if (priceChart) priceChart.destroy();
-
-    const candleData = results.map(p => ({ x: p.t, o: p.o, h: p.h, l: p.l, c: p.c }));
 
     priceChart = new Chart(ctx, {
       type: isCandlestick ? 'candlestick' : 'line',
       data: {
         datasets: [isCandlestick
-          ? { label: 'OHLC', data: candleData, borderColor: '#007bff' }
-          : { label: 'Price', data: candleData.map(p => ({ x: p.x, y: p.c })), borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.2)', fill: true, tension: 0.4 }]
+          ? { label: 'OHLC', data: prices, borderColor: '#007bff' }
+          : { label: 'Price', data: prices.map(p => ({ x: p.x, y: p.c })), borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.2)', fill: true, tension: 0.4 }]
       },
       options: {
         responsive: true,

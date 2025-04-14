@@ -73,6 +73,10 @@
       border-radius: 5px;
       cursor: pointer;
     }
+    .hover-row:hover {
+  background-color: #f3f4f6;
+  cursor: pointer;
+}
     @media (max-width: 768px) {
     td:nth-child(3),  /* Symbol */
     td:nth-child(7),  /* Market Cap */
@@ -200,7 +204,7 @@
           <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
           <td>$${coin.market_cap.toLocaleString()}</td>
           <td>$${coin.total_volume.toLocaleString()}</td>
-          <td><canvas id="spark-${coin.id}" width="180" height="30"></canvas></td>
+          <td><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
         `;
         tbody.appendChild(row);
         drawSparkline(coin.id, coin.sparkline_in_7d.price);
