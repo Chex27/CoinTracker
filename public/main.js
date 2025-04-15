@@ -22,21 +22,18 @@ function getColorClass(value) {
   return value >= 0 ? 'text-green-500' : 'text-red-500';
 }
 
-function loadCoins() {
-  fetch(`/api/prices?page=${currentPage}`)
-    .then(res => res.json())
-    .then(data => renderTable(data));
-}
-
-function renderTable(data) {
+async function loadCoins(page = 1) {
+  const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
+  const coins = await res.json();
   const tbody = document.querySelector("#crypto-table tbody");
-  if (currentPage === 1) tbody.innerHTML = "";
 
-  data.sort((a, b) => sortAscending
+  if (page === 1) tbody.innerHTML = "";
+
+  coins.sort((a, b) => sortAscending
     ? a[currentSortKey] - b[currentSortKey]
     : b[currentSortKey] - a[currentSortKey]);
 
-  data.forEach(coin => {
+  coins.forEach(coin => {
     const row = document.createElement("tr");
     row.classList.add("hover:bg-gray-100", "cursor-pointer");
     row.onclick = () => showChart(coin.id, coin.name);
@@ -44,16 +41,33 @@ function renderTable(data) {
       <td class="py-2 px-3"><img src="${coin.image}" width="24"></td>
       <td class="py-2 px-3">${coin.name}</td>
       <td class="py-2 px-3">${coin.symbol.toUpperCase()}</td>
-      <td class="py-2 px-3 ${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
-      <td class="py-2 px-3 ${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
-      <td class="py-2 px-3 ${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
-      <td class="py-2 px-3 ${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
+      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_1h_in_currency)}">${coin.current_price.toFixed(2)}</td>
+      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_1h_in_currency)}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
+      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_24h_in_currency)}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
+      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_7d_in_currency)}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
       <td class="py-2 px-3">$${coin.market_cap.toLocaleString()}</td>
       <td class="py-2 px-3">$${coin.total_volume.toLocaleString()}</td>
-      <td class="py-2 px-3">${coin.circulating_supply.toLocaleString()}</td>
-      <td class="py-2 px-3"><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
+      <td class="py-2 px-3"><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
     `;
     tbody.appendChild(row);
+    drawSparkline(coin.id, coin.sparkline_in_7d.price);
+  });
+}
+
+function drawSparkline(id, data) {
+  const ctx = document.getElementById(`spark-${id}`).getContext("2d");
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map((_, i) => i),
+      datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      responsive: false,
+      maintainAspectRatio: false
+    }
   });
 }
 
@@ -140,5 +154,5 @@ function closeChart() {
 window.onload = () => {
   loadCoins();
   addSortListeners();
-  setInterval(loadCoins, 60000);
+  setInterval(() => loadCoins(currentPage), 60000);
 };
