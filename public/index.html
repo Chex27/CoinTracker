@@ -202,7 +202,7 @@
     async function loadCoins(page = 1) {
       const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
       const coins = await res.json();
-      const tbody = document.querySelector("#crypto-table tbody");
+      const tbody = document.querySelector("#crypto-table");
       coins.forEach(coin => {
         const row = document.createElement("tr");
         row.onclick = () => loadChart(coin.id, '1');
