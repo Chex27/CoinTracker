@@ -153,6 +153,14 @@ function closeChart() {
 
 window.onload = () => {
   loadCoins();
-  addSortListeners();
-  setInterval(() => loadCoins(currentPage), 60000);
+  loadMetrics();
+  loadTrending();
+  loadFearGreed();
 };
+
+// ⬇️ Add this AFTER window.onload
+document.getElementById("loadMoreBtn").addEventListener("click", () => {
+  currentPage++;
+  loadCoins(currentPage);
+});
+
