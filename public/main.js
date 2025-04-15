@@ -1,4 +1,4 @@
-// ✅ HeckBit Pro - Refactored Chart Script
+// ✅ HBhExchange Chart Script - Tailwind Optimized
 // 🔁 Realtime Charting, Coin Alerts, Sorting, View Toggles
 
 let currentPage = 1;
@@ -10,8 +10,6 @@ let isCandlestick = false;
 let currentSortKey = 'market_cap';
 let sortAscending = false;
 
-const POLYGON_API_KEY = "0OIzN0KVU6TiSxRj70NzExfe0B9nveuH";
-
 const granularityMap = {
   '1D': 'day',
   '7D': 'hour',
@@ -21,7 +19,7 @@ const granularityMap = {
 };
 
 function getColorClass(value) {
-  return value >= 0 ? 'positive' : 'negative';
+  return value >= 0 ? 'text-green-500' : 'text-red-500';
 }
 
 function loadCoins() {
@@ -40,20 +38,20 @@ function renderTable(data) {
 
   data.forEach(coin => {
     const row = document.createElement("tr");
-    row.classList.add("hover-row");
+    row.classList.add("hover:bg-gray-100", "cursor-pointer");
     row.onclick = () => showChart(coin.id, coin.name);
     row.innerHTML = `
-      <td><img src="${coin.image}" width="24"></td>
-      <td>${coin.name}</td>
-      <td>${coin.symbol.toUpperCase()}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
-      <td>$${coin.market_cap.toLocaleString()}</td>
-      <td>$${coin.total_volume.toLocaleString()}</td>
-      <td>${coin.circulating_supply.toLocaleString()}</td>
-      <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
+      <td class="py-2 px-3"><img src="${coin.image}" width="24"></td>
+      <td class="py-2 px-3">${coin.name}</td>
+      <td class="py-2 px-3">${coin.symbol.toUpperCase()}</td>
+      <td class="py-2 px-3 ${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
+      <td class="py-2 px-3 ${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
+      <td class="py-2 px-3 ${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
+      <td class="py-2 px-3 ${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
+      <td class="py-2 px-3">$${coin.market_cap.toLocaleString()}</td>
+      <td class="py-2 px-3">$${coin.total_volume.toLocaleString()}</td>
+      <td class="py-2 px-3">${coin.circulating_supply.toLocaleString()}</td>
+      <td class="py-2 px-3"><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
     `;
     tbody.appendChild(row);
   });
@@ -93,13 +91,7 @@ function toggleChartView(range) {
 }
 
 async function loadChart(range = '1D') {
-  const granularity = granularityMap[range] || 'day';
-  const now = new Date();
-  const to = now.toISOString();
-  const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
-
   const url = `/api/polygon/${currentCoinId}/${range}`;
-
   try {
     const response = await fetch(url);
     const { prices } = await response.json();

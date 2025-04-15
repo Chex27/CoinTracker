@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HeckBit Pro Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HBhExchange</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,6 +28,7 @@
       padding: 15px;
       margin: 20px 0;
       border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
     table {
       width: 100%;
@@ -74,58 +76,65 @@
       cursor: pointer;
     }
     .hover-row:hover {
-  background-color: #f3f4f6;
-  cursor: pointer;
-}
-    @media (max-width: 768px) {
-    td:nth-child(3),  /* Symbol */
-    td:nth-child(7),  /* Market Cap */
-    td:nth-child(8),  /* Volume */
-    td:nth-child(9),  /* Circulating Supply */
-    th:nth-child(3),
-    th:nth-child(7),
-    th:nth-child(8),
-    th:nth-child(9) {
-      display: none;
+      background-color: #f3f4f6;
+      cursor: pointer;
     }
-  }
+    @media (max-width: 768px) {
+      td:nth-child(3),
+      td:nth-child(7),
+      td:nth-child(8),
+      td:nth-child(9),
+      th:nth-child(3),
+      th:nth-child(7),
+      th:nth-child(8),
+      th:nth-child(9) {
+        display: none;
+      }
+    }
   </style>
 </head>
-<body>
-  <h1>HeckBit Wallet + Market Dashboard</h1>
-  <div class="container">
-    <div class="metrics">
-      <h3>Market Metrics</h3>
-      <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
-      <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
-    </div>
-    <div class="sentiment">
-      <h3>Fear & Greed Index</h3>
-      <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
-    </div>
-    <div class="trending">
-      <h3>Trending Coins</h3>
-      <ul id="trendingList"></ul>
-    </div>
+<body class="bg-white text-gray-900 font-sans">
+    <h1 class="text-3xl font-bold text-center text-blue-600 my-6">HBhExchange</h1>
+  
+    <div class="container mx-auto px-4">
+      <!-- Market Metrics -->
+      <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+        <h2 class="text-xl font-semibold mb-2">Market Metrics</h2>
+        <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
+        <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
+      </div>
+     <!-- Fear & Greed -->
+     <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+        <h2 class="text-xl font-semibold mb-2">Fear & Greed Index</h2>
+        <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
+      </div>
+     <!-- Trending -->
+     <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+        <h2 class="text-xl font-semibold mb-2">Trending Coins</h2>
+        <ul id="trendingList" class="list-disc list-inside"></ul>
+      </div>
 
-    <table id="crypto-table">
-      <thead>
+ <!-- Coin Table -->
+ <div class="overflow-x-auto shadow-lg rounded-lg">
+    <table class="min-w-full bg-white">
+      <thead class="bg-blue-600 text-white">
         <tr>
-          <th>Logo</th>
-          <th>Name</th>
-          <th>Price</th>
-          <th>1h%</th>
-          <th>24h%</th>
-          <th>7d%</th>
-          <th>Market Cap</th>
-          <th>Volume</th>
-          <th>Last 7 Days</th>
+          <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Logo</th>
+          <th class="px-4 py-2 text-left">Name</th>
+          <th class="px-4 py-2 text-right">Price</th>
+          <th class="px-4 py-2 text-right">1h%</th>
+          <th class="px-4 py-2 text-right">24h%</th>
+          <th class="px-4 py-2 text-right">7d%</th>
+          <th class="px-4 py-2 text-right">Market Cap</th>
+          <th class="px-4 py-2 text-right">Volume</th>
+          <th class="px-4 py-2 text-center">Last 7 Days</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
     </table>
-    <button id="loadMoreBtn" onclick="loadMore()">Load More</button>
   </div>
+  <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
+</div>
   <div class="container" style="margin-top: 30px;">
     <h3>💼 Mini Portfolio Tracker</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
@@ -149,16 +158,18 @@
       <tbody></tbody>
     </table>
   </div>
-  
-  <div id="chartModal">
-    <h3 id="chartTitle"></h3>
-    <div class="chart-controls">
-      <button onclick="loadChart(currentCoinId, '1')">1D</button>
-      <button onclick="loadChart(currentCoinId, '7')">7D</button>
-      <button onclick="loadChart(currentCoinId, '30')">1M</button>
-      <button onclick="loadChart(currentCoinId, '365')">1Y</button>
-      <button onclick="loadChart(currentCoinId, 'max')">All</button>
-      <button onclick="closeChart()">Close</button>
+  <!-- Chart Modal -->
+  <div id="chartModal" class="fixed top-0 left-0 w-full h-full bg-white z-50 hidden p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 id="chartTitle" class="text-xl font-bold"></h3>
+      <button onclick="closeChart()" class="bg-red-500 text-white px-3 py-1 rounded">Close</button>
+    </div>
+    <div class="flex gap-2 mb-4">
+      <button onclick="loadChart(currentCoinId, '1')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
+      <button onclick="loadChart(currentCoinId, '7')" class="bg-blue-100 px-3 py-1 rounded">7D</button>
+      <button onclick="loadChart(currentCoinId, '30')" class="bg-blue-100 px-3 py-1 rounded">1M</button>
+      <button onclick="loadChart(currentCoinId, '365')" class="bg-blue-100 px-3 py-1 rounded">1Y</button>
+      <button onclick="loadChart(currentCoinId, 'max')" class="bg-blue-100 px-3 py-1 rounded">All</button>
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
