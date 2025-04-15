@@ -114,38 +114,37 @@
         <ul id="trendingList" class="list-disc list-inside"></ul>
       </div>
 
- <!-- Coin Table -->
- <div class="overflow-x-auto shadow-lg rounded-lg">
-    <table class="min-w-full bg-white">
+      <div class="overflow-x-auto shadow-lg rounded-lg">
+        <table class="min-w-full bg-white">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="px-4 py-2">Logo</th>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Price</th>
+              <th class="px-4 py-2">1h%</th>
+              <th class="px-4 py-2">24h%</th>
+              <th class="px-4 py-2">7d%</th>
+              <th class="px-4 py-2">Market Cap</th>
+              <th class="px-4 py-2">Volume</th>
+              <th class="px-4 py-2">Last 7 Days</th>
+            </tr>
+          </thead>
+          <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
+        </table>
+      </div>
+      <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
+    </div>
+  <div class="container mt-10">
+    <h3 class="text-lg font-semibold mb-2">💼 Mini Portfolio Tracker</h3>
+    <div class="flex flex-wrap gap-4 mb-4">
+      <input id="coinInput" placeholder="Coin ID (e.g. bitcoin)" class="border rounded px-3 py-1" />
+      <input id="buyPriceInput" placeholder="Buy Price" type="number" class="border rounded px-3 py-1" />
+      <input id="quantityInput" placeholder="Quantity" type="number" class="border rounded px-3 py-1" />
+      <button onclick="addHolding()" class="bg-blue-500 text-white px-3 py-1 rounded">Add</button>
+    </div>
+    <table id="portfolioTable" class="min-w-full text-sm">
       <thead class="bg-blue-600 text-white">
         <tr>
-          <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Logo</th>
-          <th class="px-4 py-2 text-left">Name</th>
-          <th class="px-4 py-2 text-right">Price</th>
-          <th class="px-4 py-2 text-right">1h%</th>
-          <th class="px-4 py-2 text-right">24h%</th>
-          <th class="px-4 py-2 text-right">7d%</th>
-          <th class="px-4 py-2 text-right">Market Cap</th>
-          <th class="px-4 py-2 text-right">Volume</th>
-          <th class="px-4 py-2 text-center">Last 7 Days</th>
-        </tr>
-      </thead>
-      <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
-    </table>
-  </div>
-  <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
-</div>
-  <div class="container" style="margin-top: 30px;">
-    <h3>💼 Mini Portfolio Tracker</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <input id="coinInput" placeholder="Coin ID (e.g. bitcoin)" />
-      <input id="buyPriceInput" placeholder="Buy Price" type="number" />
-      <input id="quantityInput" placeholder="Quantity" type="number" />
-      <button onclick="addHolding()">Add</button>
-    </div>
-    <table id="portfolioTable" style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr style="background:#2f54eb;color:#fff;">
           <th>Coin</th>
           <th>Buy Price</th>
           <th>Current Price</th>
@@ -158,29 +157,30 @@
       <tbody></tbody>
     </table>
   </div>
-  <!-- Chart Modal -->
   <div id="chartModal" class="fixed top-0 left-0 w-full h-full bg-white z-50 hidden p-6">
     <div class="flex justify-between items-center mb-4">
       <h3 id="chartTitle" class="text-xl font-bold"></h3>
       <button onclick="closeChart()" class="bg-red-500 text-white px-3 py-1 rounded">Close</button>
     </div>
     <div class="flex gap-2 mb-4">
-      <button onclick="loadChart(currentCoinId, '1')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
-      <button onclick="loadChart(currentCoinId, '7')" class="bg-blue-100 px-3 py-1 rounded">7D</button>
-      <button onclick="loadChart(currentCoinId, '30')" class="bg-blue-100 px-3 py-1 rounded">1M</button>
-      <button onclick="loadChart(currentCoinId, '365')" class="bg-blue-100 px-3 py-1 rounded">1Y</button>
-      <button onclick="loadChart(currentCoinId, 'max')" class="bg-blue-100 px-3 py-1 rounded">All</button>
+      <button onclick="toggleChartView('1D')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
+      <button onclick="toggleChartView('7D')" class="bg-blue-100 px-3 py-1 rounded">7D</button>
+      <button onclick="toggleChartView('1M')" class="bg-blue-100 px-3 py-1 rounded">1M</button>
+      <button onclick="toggleChartView('1Y')" class="bg-blue-100 px-3 py-1 rounded">1Y</button>
+      <button onclick="toggleChartView('ALL')" class="bg-blue-100 px-3 py-1 rounded">ALL</button>
+      <button onclick="toggleCandlestick()" class="bg-gray-100 px-3 py-1 rounded">Candlestick</button>
+      <button onclick="toggleFullScreenChart()" class="bg-gray-200 px-3 py-1 rounded">Full Screen</button>
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
-  <div class="container" style="margin-top: 30px;">
-    <h3>📢 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
+  <div class="container mt-10">
+    <h3 class="text-lg font-semibold mb-2">📢 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
     <input 
       type="text" 
       id="tweetSearch" 
       placeholder="Enter coin (e.g. ETH, SOL, DOGE)" 
       onkeyup="updateTweets(event)" 
-      style="padding:8px;width:300px;margin-bottom:10px;border:1px solid #ccc;border-radius:5px;"
+      class="border px-3 py-1 rounded w-72 mb-4"
     />
     <div id="tweetFeed">
       <iframe 
