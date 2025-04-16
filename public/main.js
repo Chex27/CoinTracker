@@ -23,13 +23,15 @@ const granularityMap = {
 
 function getColorClass(value) {
   return value >= 0 ? 'positive' : 'negative';
-}
+} 
 
 function loadCoins() {
   fetch(`/api/prices?page=${currentPage}`)
     .then(res => res.json())
-    .then(data => renderTable(data));
+    .then(data => renderTable(data))
+    .catch(err => console.error("Error loading coins:", err));
 }
+
 
 function renderTable(data) {
   const tbody = document.querySelector("#crypto-table tbody");
@@ -96,8 +98,22 @@ function setChartMetric(metric) {
   currentMetric = metric;
   loadChart(currentRange);
 }
-
+// ✅ Polygon OHLC Chart Data Loader
+async function loadPolygonChart(symbol, interval) {
+  const url = `/api/polygon/${symbol}/${interval}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.prices;
+}
 async function loadChart(range = '1D') {
+  const intervalMap = {
+    '1D': '1min',
+    '7D': '15min',
+    '1M': '1d',
+    '1Y': '7d',
+    'ALL': '30d'
+  };
+
   const daysMap = {
     '1D': '1',
     '7D': '7',
@@ -105,23 +121,51 @@ async function loadChart(range = '1D') {
     '1Y': '365',
     'ALL': 'max'
   };
-  const days = daysMap[range];
-  const url = `https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`;
+
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  if (priceChart) priceChart.destroy();
 
   try {
-    const res = await fetch(url);
-    const json = await res.json();
-    const chartData = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
+    let chartData;
 
-    const ctx = document.getElementById("priceChart").getContext("2d");
-    if (priceChart) priceChart.destroy();
+    if (isCandlestick) {
+      // 🔥 Fetch candlestick (OHLC) data from Polygon
+      const interval = intervalMap[range];
+      const polygonData = await loadPolygonChart(currentCoinId, interval);
+      
+      chartData = polygonData.map(c => ({
+        x: c.x,
+        o: c.o,
+        h: c.h,
+        l: c.l,
+        c: c.c
+      }));
+    } else {
+      // 🔥 Fetch line chart data from CoinGecko
+      const days = daysMap[range];
+      const url = `https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`;
+      const res = await fetch(url);
+      const json = await res.json();
+
+      chartData = json[currentMetric].map(p => ({
+        x: p[0],
+        y: p[1]
+      }));
+    }
 
     priceChart = new Chart(ctx, {
       type: isCandlestick ? 'candlestick' : 'line',
       data: {
         datasets: [
           isCandlestick
-            ? { label: 'OHLC', data: chartData, borderColor: '#007bff' }
+            ? { 
+                label: 'OHLC',
+                data: chartData,
+                color: {
+                  up: '#26a69a',
+                  down: '#ef5350'
+                }
+              }
             : {
                 label: currentCoinName,
                 data: chartData,
@@ -136,17 +180,22 @@ async function loadChart(range = '1D') {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { type: 'time', time: { tooltipFormat: 'MMM dd' } },
+          x: {
+            type: 'time',
+            time: { tooltipFormat: 'MMM dd HH:mm' }
+          },
           y: { beginAtZero: false }
         },
         plugins: { legend: { display: false } }
       }
     });
+
   } catch (err) {
     console.error("Chart Load Error:", err);
     alert("Failed to load chart data.");
   }
 }
+
 
 function toggleFullScreenChart() {
   const chartModal = document.getElementById('chartModal');

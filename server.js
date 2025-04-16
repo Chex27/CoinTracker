@@ -60,7 +60,26 @@ app.get('/logout', (req, res, next) => {
 app.get('/api/polygon/:symbol/:interval', async (req, res) => {
   const { symbol, interval } = req.params;
   const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
-
+  app.get('/api/prices', async (req, res) => {
+    try {
+      const page = req.query.page || 1;
+      const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
+        params: {
+          vs_currency: 'usd',
+          order: 'market_cap_desc',
+          per_page: 100,
+          page,
+          price_change_percentage: '1h,24h,7d',
+          sparkline: true
+        }
+      });
+      res.json(response.data);
+    } catch (err) {
+      console.error("Error fetching coin data:", err.message);
+      res.status(500).json({ error: 'Failed to fetch coin data' });
+    }
+  });
+  
   const resolutionMap = {
     '1s': 'second', '1min': 'minute', '5min': 'minute',
     '15min': 'minute', '1d': 'day', '7d': 'day', '30d': 'day', '1y': 'day', 'all': 'day'
