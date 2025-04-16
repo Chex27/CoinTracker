@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HBhExchange</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="/main.js"></script>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HBhExchange</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script> <!-- 🔥 This is the missing one -->
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+        <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+        <script src="https://cdn.tailwindcss.com"></script>      
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -395,7 +395,9 @@ function renderPortfolio() {
     tbody.appendChild(row);
   });
 }
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-  </script>
+</script>
 </body>
 </html>

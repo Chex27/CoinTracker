@@ -1,37 +1,28 @@
-// ✅ HeckBit Pro - Refactored Chart Script
-// 🔁 Realtime Charting, Coin Alerts, Sorting, View Toggles
+// ✅ HeckBit Pro - Updated for Render Deployment
 
 let currentPage = 1;
 let priceChart;
 let currentCoinId = "bitcoin";
 let currentCoinName = "Bitcoin";
 let currentRange = '1D';
-let currentMetric = 'prices'; // ✅ Added for toggling metrics (price, market_cap, volume)
+let currentMetric = 'prices';
 let isCandlestick = false;
 let currentSortKey = 'market_cap';
 let sortAscending = false;
 
-const POLYGON_API_KEY = "0OIzN0KVU6TiSxRj70NzExfe0B9nveuH";
-
-const granularityMap = {
-  '1D': 'day',
-  '7D': 'hour',
-  '1M': 'day',
-  '1Y': 'week',
-  'ALL': 'month'
-};
+// ⚠️ Replace this with your actual Render backend URL
+const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 
 function getColorClass(value) {
   return value >= 0 ? 'positive' : 'negative';
 } 
 
 function loadCoins() {
-  fetch(`/api/prices?page=${currentPage}`)
+  fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
     .then(res => res.json())
     .then(data => renderTable(data))
     .catch(err => console.error("Error loading coins:", err));
 }
-
 
 function renderTable(data) {
   const tbody = document.querySelector("#crypto-table tbody");
@@ -71,8 +62,8 @@ function setAlert(id, name, price) {
 
 function addSortListeners() {
   const headers = document.querySelectorAll("#crypto-table th");
+  const keys = ['name','symbol','current_price','change_1h','change_24h','change_7d','market_cap','total_volume','circulating_supply'];
   headers.forEach((header, index) => {
-    const keys = ['name','symbol','current_price','change_1h','change_24h','change_7d','market_cap','total_volume','circulating_supply'];
     header.addEventListener("click", () => {
       currentSortKey = keys[index - 1] || 'market_cap';
       sortAscending = !sortAscending;
@@ -81,30 +72,13 @@ function addSortListeners() {
   });
 }
 
-function showChart(coinId, coinName) {
-  currentCoinId = coinId;
-  currentCoinName = coinName;
-  document.getElementById("chartModal").style.display = "block";
-  document.getElementById("chartTitle").innerText = `${coinName} | Price Chart`;
-  loadChart(currentRange);
-}
-
-function toggleChartView(range) {
-  currentRange = range;
-  loadChart(range);
-}
-
-function setChartMetric(metric) {
-  currentMetric = metric;
-  loadChart(currentRange);
-}
-// ✅ Polygon OHLC Chart Data Loader
 async function loadPolygonChart(symbol, interval) {
-  const url = `/api/polygon/${symbol}/${interval}`;
+  const url = `${RENDER_BACKEND_URL}/api/polygon/${symbol}/${interval}`;
   const res = await fetch(url);
   const json = await res.json();
   return json.prices;
 }
+
 async function loadChart(range = '1D') {
   const intervalMap = {
     '1D': '1min',
@@ -113,7 +87,6 @@ async function loadChart(range = '1D') {
     '1Y': '7d',
     'ALL': '30d'
   };
-
   const daysMap = {
     '1D': '1',
     '7D': '7',
@@ -129,28 +102,15 @@ async function loadChart(range = '1D') {
     let chartData;
 
     if (isCandlestick) {
-      // 🔥 Fetch candlestick (OHLC) data from Polygon
       const interval = intervalMap[range];
       const polygonData = await loadPolygonChart(currentCoinId, interval);
-      
-      chartData = polygonData.map(c => ({
-        x: c.x,
-        o: c.o,
-        h: c.h,
-        l: c.l,
-        c: c.c
-      }));
+      chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
     } else {
-      // 🔥 Fetch line chart data from CoinGecko
       const days = daysMap[range];
       const url = `https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`;
       const res = await fetch(url);
       const json = await res.json();
-
-      chartData = json[currentMetric].map(p => ({
-        x: p[0],
-        y: p[1]
-      }));
+      chartData = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
     }
 
     priceChart = new Chart(ctx, {
@@ -158,49 +118,16 @@ async function loadChart(range = '1D') {
       data: {
         datasets: [
           isCandlestick
-            ? { 
-                label: 'OHLC',
-                data: chartData,
-                color: {
-                  up: '#26a69a',
-                  down: '#ef5350'
-                }
-              }
-            : {
-                label: currentCoinName,
-                data: chartData,
-                borderColor: currentMetric === 'prices' ? '#2f54eb' : '#00b894',
-                backgroundColor: 'rgba(47,84,235,0.1)',
-                fill: true,
-                tension: 0.3
-              }
+            ? { label: 'OHLC', data: chartData, color: { up: '#26a69a', down: '#ef5350' } }
+            : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
         ]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: 'time',
-            time: { tooltipFormat: 'MMM dd HH:mm' }
-          },
-          y: { beginAtZero: false }
-        },
-        plugins: { legend: { display: false } }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } }, y: { beginAtZero: false } } }
     });
-
   } catch (err) {
     console.error("Chart Load Error:", err);
     alert("Failed to load chart data.");
   }
-}
-
-
-function toggleFullScreenChart() {
-  const chartModal = document.getElementById('chartModal');
-  if (!document.fullscreenElement) chartModal.requestFullscreen();
-  else document.exitFullscreen();
 }
 
 function toggleCandlestick() {
@@ -208,17 +135,9 @@ function toggleCandlestick() {
   loadChart(currentRange);
 }
 
-function closeChart() {
-  document.getElementById("chartModal").style.display = "none";
-  if (document.fullscreenElement) document.exitFullscreen();
-}
-
 window.onload = () => {
   loadCoins();
   addSortListeners();
   setInterval(loadCoins, 60000);
-  document.getElementById("loadMoreBtn").addEventListener("click", () => {
-    currentPage++;
-    loadCoins(currentPage);
-  });
+  document.getElementById("loadMoreBtn").onclick = () => { currentPage++; loadCoins(); };
 };
