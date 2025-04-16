@@ -1,4 +1,4 @@
-// ✅ HBhExchange Chart Script - Tailwind Optimized
+// ✅ HeckBit Pro - Refactored Chart Script
 // 🔁 Realtime Charting, Coin Alerts, Sorting, View Toggles
 
 let currentPage = 1;
@@ -6,9 +6,12 @@ let priceChart;
 let currentCoinId = "bitcoin";
 let currentCoinName = "Bitcoin";
 let currentRange = '1D';
+let currentMetric = 'prices'; // ✅ Added for toggling metrics (price, market_cap, volume)
 let isCandlestick = false;
 let currentSortKey = 'market_cap';
 let sortAscending = false;
+
+const POLYGON_API_KEY = "0OIzN0KVU6TiSxRj70NzExfe0B9nveuH";
 
 const granularityMap = {
   '1D': 'day',
@@ -19,55 +22,40 @@ const granularityMap = {
 };
 
 function getColorClass(value) {
-  return value >= 0 ? 'text-green-500' : 'text-red-500';
+  return value >= 0 ? 'positive' : 'negative';
 }
 
-async function loadCoins(page = 1) {
-  const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
-  const coins = await res.json();
-  const tbody = document.querySelector("#crypto-table");
+function loadCoins() {
+  fetch(`/api/prices?page=${currentPage}`)
+    .then(res => res.json())
+    .then(data => renderTable(data));
+}
 
-  if (page === 1) tbody.innerHTML = "";
+function renderTable(data) {
+  const tbody = document.querySelector("#crypto-table tbody");
+  if (currentPage === 1) tbody.innerHTML = "";
 
-  coins.sort((a, b) => sortAscending
+  data.sort((a, b) => sortAscending
     ? a[currentSortKey] - b[currentSortKey]
     : b[currentSortKey] - a[currentSortKey]);
 
-  coins.forEach(coin => {
+  data.forEach(coin => {
     const row = document.createElement("tr");
-    row.classList.add("hover:bg-gray-100", "cursor-pointer");
     row.onclick = () => showChart(coin.id, coin.name);
     row.innerHTML = `
-      <td class="py-2 px-3"><img src="${coin.image}" width="24"></td>
-      <td class="py-2 px-3">${coin.name}</td>
-      <td class="py-2 px-3">${coin.symbol.toUpperCase()}</td>
-      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_1h_in_currency)}">${coin.current_price.toFixed(2)}</td>
-      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_1h_in_currency)}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
-      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_24h_in_currency)}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
-      <td class="py-2 px-3 ${getColorClass(coin.price_change_percentage_7d_in_currency)}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
-      <td class="py-2 px-3">$${coin.market_cap.toLocaleString()}</td>
-      <td class="py-2 px-3">$${coin.total_volume.toLocaleString()}</td>
-      <td class="py-2 px-3"><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
+      <td><img src="${coin.image}" width="24"></td>
+      <td>${coin.name}</td>
+      <td>${coin.symbol.toUpperCase()}</td>
+      <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
+      <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
+      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
+      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
+      <td>$${coin.market_cap.toLocaleString()}</td>
+      <td>$${coin.total_volume.toLocaleString()}</td>
+      <td>${coin.circulating_supply.toLocaleString()}</td>
+      <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
     `;
     tbody.appendChild(row);
-    drawSparkline(coin.id, coin.sparkline_in_7d.price);
-  });
-}
-
-function drawSparkline(id, data) {
-  const ctx = document.getElementById(`spark-${id}`).getContext("2d");
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.map((_, i) => i),
-      datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: { x: { display: false }, y: { display: false } },
-      responsive: false,
-      maintainAspectRatio: false
-    }
   });
 }
 
@@ -104,29 +92,54 @@ function toggleChartView(range) {
   loadChart(range);
 }
 
+function setChartMetric(metric) {
+  currentMetric = metric;
+  loadChart(currentRange);
+}
+
 async function loadChart(range = '1D') {
-  const url = `/api/polygon/${currentCoinId}/${range}`;
+  const daysMap = {
+    '1D': '1',
+    '7D': '7',
+    '1M': '30',
+    '1Y': '365',
+    'ALL': 'max'
+  };
+  const days = daysMap[range];
+  const url = `https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`;
+
   try {
-    const response = await fetch(url);
-    const { prices } = await response.json();
+    const res = await fetch(url);
+    const json = await res.json();
+    const chartData = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
+
     const ctx = document.getElementById("priceChart").getContext("2d");
     if (priceChart) priceChart.destroy();
 
     priceChart = new Chart(ctx, {
       type: isCandlestick ? 'candlestick' : 'line',
       data: {
-        datasets: [isCandlestick
-          ? { label: 'OHLC', data: prices, borderColor: '#007bff' }
-          : { label: 'Price', data: prices.map(p => ({ x: p.x, y: p.c })), borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.2)', fill: true, tension: 0.4 }]
+        datasets: [
+          isCandlestick
+            ? { label: 'OHLC', data: chartData, borderColor: '#007bff' }
+            : {
+                label: currentCoinName,
+                data: chartData,
+                borderColor: currentMetric === 'prices' ? '#2f54eb' : '#00b894',
+                backgroundColor: 'rgba(47,84,235,0.1)',
+                fill: true,
+                tension: 0.3
+              }
+        ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: { type: 'time', time: { tooltipFormat: 'MMM dd' }, ticks: { color: '#333' }, grid: { color: '#eee' } },
-          y: { ticks: { color: '#333' }, grid: { color: '#eee' } }
+          x: { type: 'time', time: { tooltipFormat: 'MMM dd' } },
+          y: { beginAtZero: false }
         },
-        plugins: { legend: { labels: { color: '#333' } } }
+        plugins: { legend: { display: false } }
       }
     });
   } catch (err) {
@@ -153,14 +166,10 @@ function closeChart() {
 
 window.onload = () => {
   loadCoins();
-  loadMetrics();
-  loadTrending();
-  loadFearGreed();
+  addSortListeners();
+  setInterval(loadCoins, 60000);
+  document.getElementById("loadMoreBtn").addEventListener("click", () => {
+    currentPage++;
+    loadCoins(currentPage);
+  });
 };
-
-// ⬇️ Add this AFTER window.onload
-document.getElementById("loadMoreBtn").addEventListener("click", () => {
-  currentPage++;
-  loadCoins(currentPage);
-});
-

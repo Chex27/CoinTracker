@@ -163,6 +163,11 @@
       <button onclick="closeChart()" class="bg-red-500 text-white px-3 py-1 rounded">Close</button>
     </div>
     <div class="flex gap-2 mb-4">
+     <button onclick="setChartMetric('prices')" class="bg-blue-100 px-3 py-1 rounded">Price</button>
+     <button onclick="setChartMetric('market_caps')" class="bg-blue-100 px-3 py-1 rounded">Market Cap</button>
+     <button onclick="setChartMetric('total_volumes')" class="bg-blue-100 px-3 py-1 rounded">Volume</button>
+    </div>
+    <div class="flex gap-2 mb-4">
       <button onclick="toggleChartView('1D')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
       <button onclick="toggleChartView('7D')" class="bg-blue-100 px-3 py-1 rounded">7D</button>
       <button onclick="toggleChartView('1M')" class="bg-blue-100 px-3 py-1 rounded">1M</button>
@@ -173,6 +178,8 @@
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
+  
+  
   <div class="container mt-10">
     <h3 class="text-lg font-semibold mb-2">📢 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
     <input 
@@ -195,22 +202,57 @@
   
   
   <script>
-    let currentPage = 1;
-    let currentCoinId = "bitcoin";
-    let priceChart;
+let currentPage = 1;
+let currentCoinId = "bitcoin";
+let priceChart;
+let currentMetric = "prices"; // ✅ This is where you insert it
+let currentRange = "1D";
+let isCandlestick = false;
 
-    async function loadCoins(page = 1) {
-  const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
-  const coins = await res.json();
+function setChartMetric(metric) {
+  currentMetric = metric;
+  loadChart(currentRange); // reload chart with new metric
+}
 
-  const tbody = document.querySelector("#crypto-table");
-  if (!tbody) {
-    console.error("⚠️ Could not find tbody with ID #crypto-table");
-    return;
-  }
+    async function loadChart(range = '1D') {
+  const daysMap = {
+    "1D": "1",
+    "7D": "7",
+    "1M": "30",
+    "1Y": "365",
+    "ALL": "max"
+  };
+  const days = daysMap[range];
+  const res = await fetch(`https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`);
+  const json = await res.json();
+  const data = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
 
-  if (page === 1) tbody.innerHTML = ""; // ✅ ADD THIS HERE
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  if (priceChart) priceChart.destroy();
 
+  priceChart = new Chart(ctx, {
+    type: isCandlestick ? 'candlestick' : 'line',
+    data: {
+      datasets: [{
+        label: currentCoinName,
+        data,
+        borderColor: currentMetric === 'prices' ? '#2f54eb' : '#00b894',
+        backgroundColor: 'rgba(47,84,235,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { type: 'time', time: { unit: 'day' } },
+        y: { beginAtZero: false }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
   coins.forEach(coin => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -233,10 +275,6 @@
     tbody.appendChild(row);
     drawSparkline(coin.id, coin.sparkline_in_7d.price);
   });
-}
-
-
-
     function loadMore() {
       currentPage++;
       loadCoins(currentPage);
@@ -255,30 +293,6 @@
           scales: { x: { display: false }, y: { display: false } },
           responsive: false,
           maintainAspectRatio: false
-        }
-      });
-    }
-
-    async function loadChart(coinId, days) {
-      currentCoinId = coinId;
-      const ctx = document.getElementById("priceChart").getContext("2d");
-      document.getElementById("chartModal").style.display = "block";
-      document.getElementById("chartTitle").innerText = `${coinId.toUpperCase()} Chart`;
-
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`);
-      const json = await res.json();
-      const prices = json.prices.map(p => ({ x: p[0], y: p[1] }));
-
-      if (priceChart) priceChart.destroy();
-
-      priceChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          datasets: [{ label: coinId, data: prices, borderColor: '#2f54eb', fill: true, tension: 0.3 }]
-        },
-        options: {
-          scales: { x: { type: 'time', time: { unit: 'day' } }, y: { beginAtZero: false } },
-          plugins: { legend: { display: false } }
         }
       });
     }
