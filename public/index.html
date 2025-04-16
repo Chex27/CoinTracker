@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="/main.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -80,60 +81,53 @@
       cursor: pointer;
     }
     @media (max-width: 768px) {
-      td:nth-child(3),
-      td:nth-child(7),
-      td:nth-child(8),
-      td:nth-child(9),
-      th:nth-child(3),
-      th:nth-child(7),
-      th:nth-child(8),
-      th:nth-child(9) {
+      td:nth-child(3), td:nth-child(7), td:nth-child(8), td:nth-child(9),
+      th:nth-child(3), th:nth-child(7), th:nth-child(8), th:nth-child(9) {
         display: none;
       }
     }
   </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
-    <h1 class="text-3xl font-bold text-center text-blue-600 my-6">HBhExchange</h1>
-  
-    <div class="container mx-auto px-4">
-      <!-- Market Metrics -->
-      <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
-        <h2 class="text-xl font-semibold mb-2">Market Metrics</h2>
-        <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
-        <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
-      </div>
-     <!-- Fear & Greed -->
-     <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
-        <h2 class="text-xl font-semibold mb-2">Fear & Greed Index</h2>
-        <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
-      </div>
-     <!-- Trending -->
-     <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
-        <h2 class="text-xl font-semibold mb-2">Trending Coins</h2>
-        <ul id="trendingList" class="list-disc list-inside"></ul>
-      </div>
-
-      <div class="overflow-x-auto shadow-lg rounded-lg">
-        <table class="min-w-full bg-white">
-          <thead class="bg-blue-600 text-white">
-            <tr>
-              <th class="px-4 py-2">Logo</th>
-              <th class="px-4 py-2">Name</th>
-              <th class="px-4 py-2">Price</th>
-              <th class="px-4 py-2">1h%</th>
-              <th class="px-4 py-2">24h%</th>
-              <th class="px-4 py-2">7d%</th>
-              <th class="px-4 py-2">Market Cap</th>
-              <th class="px-4 py-2">Volume</th>
-              <th class="px-4 py-2">Last 7 Days</th>
-            </tr>
-          </thead>
-          <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
-        </table>
-      </div>
-      <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
+  <h1 class="text-3xl font-bold text-center text-blue-600 my-6">HBhExchange</h1>
+  <div class="container mx-auto px-4">
+    <!-- Market Metrics -->
+    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">Market Metrics</h2>
+      <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
+      <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
     </div>
+    <!-- Fear & Greed -->
+    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">Fear & Greed Index</h2>
+      <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
+    </div>
+    <!-- Trending -->
+    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+      <h2 class="text-xl font-semibold mb-2">Trending Coins</h2>
+      <ul id="trendingList" class="list-disc list-inside"></ul>
+    </div>
+    <div class="overflow-x-auto shadow-lg rounded-lg">
+      <table class="min-w-full bg-white">
+        <thead class="bg-blue-600 text-white">
+          <tr>
+            <th class="px-4 py-2">Logo</th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Price</th>
+            <th class="px-4 py-2">1h%</th>
+            <th class="px-4 py-2">24h%</th>
+            <th class="px-4 py-2">7d%</th>
+            <th class="px-4 py-2">Market Cap</th>
+            <th class="px-4 py-2">Volume</th>
+            <th class="px-4 py-2">Last 7 Days</th>
+          </tr>
+        </thead>
+        <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
+      </table>
+    </div>
+    <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
+  </div>
+
   <div class="container mt-10">
     <h3 class="text-lg font-semibold mb-2">💼 Mini Portfolio Tracker</h3>
     <div class="flex flex-wrap gap-4 mb-4">
@@ -157,15 +151,17 @@
       <tbody></tbody>
     </table>
   </div>
+
+  <!-- Chart Modal -->
   <div id="chartModal" class="fixed top-0 left-0 w-full h-full bg-white z-50 hidden p-6">
     <div class="flex justify-between items-center mb-4">
       <h3 id="chartTitle" class="text-xl font-bold"></h3>
       <button onclick="closeChart()" class="bg-red-500 text-white px-3 py-1 rounded">Close</button>
     </div>
     <div class="flex gap-2 mb-4">
-     <button onclick="setChartMetric('prices')" class="bg-blue-100 px-3 py-1 rounded">Price</button>
-     <button onclick="setChartMetric('market_caps')" class="bg-blue-100 px-3 py-1 rounded">Market Cap</button>
-     <button onclick="setChartMetric('total_volumes')" class="bg-blue-100 px-3 py-1 rounded">Volume</button>
+      <button onclick="setChartMetric('prices')" class="bg-blue-100 px-3 py-1 rounded">Price</button>
+      <button onclick="setChartMetric('market_caps')" class="bg-blue-100 px-3 py-1 rounded">Market Cap</button>
+      <button onclick="setChartMetric('total_volumes')" class="bg-blue-100 px-3 py-1 rounded">Volume</button>
     </div>
     <div class="flex gap-2 mb-4">
       <button onclick="toggleChartView('1D')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
@@ -178,10 +174,10 @@
     </div>
     <canvas id="priceChart" height="400"></canvas>
   </div>
-  
-  
+
+  <!-- Live Tweets -->
   <div class="container mt-10">
-    <h3 class="text-lg font-semibold mb-2">📢 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
+    <h3 class="text-lg font-semibold mb-2">🔊 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
     <input 
       type="text" 
       id="tweetSearch" 
@@ -199,7 +195,6 @@
       ></iframe>
     </div>
   </div>
-  
   
   <script>
 let currentPage = 1;
@@ -253,7 +248,7 @@ function setChartMetric(metric) {
     }
   });
 }
-  coins.forEach(coin => {
+
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><img src="${coin.image}" width="24" /></td>
@@ -274,7 +269,7 @@ function setChartMetric(metric) {
     `;
     tbody.appendChild(row);
     drawSparkline(coin.id, coin.sparkline_in_7d.price);
-  });
+
     function loadMore() {
       currentPage++;
       loadCoins(currentPage);
