@@ -197,6 +197,17 @@
   </div>
   
   <script>
+      const { DateTime } = luxon;
+  Chart._adapters._date.override({
+    _id: 'luxon',
+    formats: () => ({}),
+    parse: (value) => DateTime.fromMillis(value),
+    format: (time, format) => DateTime.fromMillis(time).toFormat(format),
+    add: (time, amount, unit) => DateTime.fromMillis(time).plus({ [unit]: amount }).toMillis(),
+    diff: (max, min, unit) => DateTime.fromMillis(max).diff(DateTime.fromMillis(min), unit).get(unit),
+    startOf: (time, unit) => DateTime.fromMillis(time).startOf(unit).toMillis(),
+    endOf: (time, unit) => DateTime.fromMillis(time).endOf(unit).toMillis(),
+  });
 let currentPage = 1;
 let currentCoinId = "bitcoin";
 let priceChart;
@@ -321,6 +332,39 @@ function setChartMetric(metric) {
       document.getElementById("fearValue").innerText = json.data[0].value;
       document.getElementById("fearLabel").innerText = json.data[0].value_classification;
     }
+    function renderTable(data) {
+  const tbody = document.getElementById("crypto-table");
+  if (currentPage === 1) tbody.innerHTML = "";
+
+  data.forEach(coin => {
+    const row = document.createElement("tr");
+    row.classList.add("hover-row");
+    row.onclick = () => showChart(coin.id, coin.name);
+    row.innerHTML = `
+      <td><img src="${coin.image}" width="24" /></td>
+      <td>${coin.name}</td>
+      <td>$${coin.current_price.toFixed(2)}</td>
+      <td class="${coin.price_change_percentage_1h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
+      <td class="${coin.price_change_percentage_24h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
+      <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
+      <td>$${coin.market_cap.toLocaleString()}</td>
+      <td>$${coin.total_volume.toLocaleString()}</td>
+      <td><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
+    `;
+    tbody.appendChild(row);
+    drawSparkline(coin.id, coin.sparkline_in_7d?.price || []);
+  });
+}
+
+    async function loadCoins(page = 1) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`);
+    const data = await res.json();
+    renderTable(data);
+  } catch (err) {
+    console.error("Coin load error:", err);
+  }
+}
 
     document.addEventListener("DOMContentLoaded", () => {
   loadCoins();
@@ -372,32 +416,20 @@ async function addHolding() {
     console.error(err);
   }
 }
-
-function renderPortfolio() {
-  const tbody = document.querySelector("#portfolioTable tbody");
-  tbody.innerHTML = "";
-
-  portfolio.forEach(p => {
-    const value = p.currentPrice * p.quantity;
-    const profit = (p.currentPrice - p.buyPrice) * p.quantity;
-    const percent = ((p.currentPrice - p.buyPrice) / p.buyPrice) * 100;
-
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${p.coin}</td>
-      <td>$${p.buyPrice.toFixed(2)}</td>
-      <td>$${p.currentPrice.toFixed(2)}</td>
-      <td>${p.quantity}</td>
-      <td>$${value.toFixed(2)}</td>
-      <td class="${profit >= 0 ? 'positive' : 'negative'}">$${profit.toFixed(2)}</td>
-      <td class="${percent >= 0 ? 'positive' : 'negative'}">${percent.toFixed(2)}%</td>
-    `;
-    tbody.appendChild(row);
-  });
+function showChart(id, name) {
+  currentCoinId = id;
+  currentCoinName = name;
+  document.getElementById("chartTitle").innerText = name;
+  document.getElementById("chartModal").style.display = "block";
+  loadChart(currentRange);
 }
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+function toggleChartView(range) {
+  currentRange = range;
+  loadChart(range);
+}
 
-</script>
+
+<!-- At the very end of the file -->
+<script src="main.js"></script>
 </body>
 </html>
