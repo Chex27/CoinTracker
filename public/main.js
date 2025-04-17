@@ -10,12 +10,11 @@ let isCandlestick = false;
 let currentSortKey = 'market_cap';
 let sortAscending = false;
 
-// ⚠️ Replace this with your actual Render backend URL
 const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 
 function getColorClass(value) {
   return value >= 0 ? 'positive' : 'negative';
-} 
+}
 
 function loadCoins() {
   fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
@@ -122,7 +121,15 @@ async function loadChart(range = '1D') {
             : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
         ]
       },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } }, y: { beginAtZero: false } } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } },
+          y: { beginAtZero: false }
+        }
+      }
     });
   } catch (err) {
     console.error("Chart Load Error:", err);
@@ -136,8 +143,24 @@ function toggleCandlestick() {
 }
 
 window.onload = () => {
+  // ✅ Fix Luxon adapter load order
+  const { DateTime } = luxon;
+  Chart._adapters._date.override({
+    _id: 'luxon',
+    formats: () => ({}),
+    parse: (value) => DateTime.fromMillis(value),
+    format: (time, format) => DateTime.fromMillis(time).toFormat(format),
+    add: (time, amount, unit) => DateTime.fromMillis(time).plus({ [unit]: amount }).toMillis(),
+    diff: (max, min, unit) => DateTime.fromMillis(max).diff(DateTime.fromMillis(min), unit).get(unit),
+    startOf: (time, unit) => DateTime.fromMillis(time).startOf(unit).toMillis(),
+    endOf: (time, unit) => DateTime.fromMillis(time).endOf(unit).toMillis()
+  });
+
   loadCoins();
   addSortListeners();
   setInterval(loadCoins, 60000);
-  document.getElementById("loadMoreBtn").onclick = () => { currentPage++; loadCoins(); };
+  document.getElementById("loadMoreBtn").onclick = () => {
+    currentPage++;
+    loadCoins();
+  };
 };
