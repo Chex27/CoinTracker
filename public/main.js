@@ -1,4 +1,4 @@
-// ✅ HeckBit Pro - Updated for Render Deployment
+// ✅hbhexchange Pro - Updated for Render Deployment
 
 let currentPage = 1;
 let priceChart;
@@ -18,7 +18,7 @@ function getColorClass(value) {
 } 
 
 function loadCoins() {
-  fetch(`https://heckbit-server.onrender.com/api/prices?page=${currentPage}`)
+  fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
     .then(res => res.json())
     .then(data => renderTable(data))
     .catch(err => console.error("Error loading coins:", err));
@@ -73,7 +73,7 @@ function addSortListeners() {
 }
 
 async function loadPolygonChart(symbol, interval) {
-  const url = `https://heckbit-server.onrender.com/api/polygon/${symbol}/${interval}`;
+  const url = `${RENDER_BACKEND_URL}/api/polygon/${symbol}/${interval}`;
   const res = await fetch(url);
   const json = await res.json();
   return json.prices;
