@@ -1,5 +1,5 @@
 // ✅hbhexchange Pro - Fully Integrated Main.js
-
+console.log("Script loaded");
 let currentPage     = 1;
 let priceChart;
 let currentCoinId   = "bitcoin";
@@ -14,12 +14,20 @@ const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
-function loadCoins(){
+function loadCoins() {
+  console.log("Loading coins..."); // Add this
   fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
-    .then(r=>r.json())
-    .then(renderTable)
-    .catch(err=>console.error("Error loading coins:",err));
+    .then(r => {
+      if (!r.ok) throw new Error("Network response was not ok");
+      return r.json();
+    })
+    .then(data => {
+      console.log("Received coin data:", data); // Add this
+      renderTable(data);
+    })
+    .catch(err => console.error("Error loading coins:", err));
 }
+
 
 function renderTable(data){
   const tbody = document.getElementById("crypto-table");
