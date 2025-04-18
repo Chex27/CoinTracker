@@ -1,74 +1,185 @@
-// ✅hbhexchange Pro - Updated for Render Deployment
+// ✅hbhexchange Pro - Fully Integrated Main.js
 
-let currentPage = 1;
+let currentPage     = 1;
 let priceChart;
-let currentCoinId = "bitcoin";
+let currentCoinId   = "bitcoin";
 let currentCoinName = "Bitcoin";
-let currentRange = '1D';
-let currentMetric = 'prices';
-let isCandlestick = false;
-let currentSortKey = 'market_cap';
-let sortAscending = false;
+let currentRange    = '1D';
+let currentMetric   = 'prices';
+let isCandlestick   = false;
+let currentSortKey  = 'market_cap';
+let sortAscending   = false;
 
 const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 
-function getColorClass(value) {
-  return value >= 0 ? 'positive' : 'negative';
-}
+function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
-function loadCoins() {
+function loadCoins(){
   fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
-    .then(res => res.json())
-    .then(data => renderTable(data))
-    .catch(err => console.error("Error loading coins:", err));
+    .then(r=>r.json())
+    .then(renderTable)
+    .catch(err=>console.error("Error loading coins:",err));
 }
 
-function renderTable(data) {
-  const tbody = document.querySelector("#crypto-table tbody");
-  if (currentPage === 1) tbody.innerHTML = "";
-
-  data.sort((a, b) => sortAscending
-    ? a[currentSortKey] - b[currentSortKey]
-    : b[currentSortKey] - a[currentSortKey]);
-
-  data.forEach(coin => {
-    const row = document.createElement("tr");
-    row.onclick = () => showChart(coin.id, coin.name);
-    row.innerHTML = `
-      <td><img src="${coin.image}" width="24"></td>
+function renderTable(data){
+  const tbody = document.getElementById("crypto-table");
+  if(currentPage===1) tbody.innerHTML = "";
+  data.sort((a,b)=>
+    sortAscending
+      ? a[currentSortKey] - b[currentSortKey]
+      : b[currentSortKey] - a[currentSortKey]
+  ).forEach(coin=>{
+    const tr = document.createElement("tr");
+    tr.classList.add("hover-row");
+    tr.onclick = ()=>showChart(coin.id,coin.name);
+    tr.innerHTML = `
+      <td><img src="${coin.image}" width="24"/></td>
       <td>${coin.name}</td>
       <td>${coin.symbol.toUpperCase()}</td>
       <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2)}%</td>
+      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h.toFixed(2)}%</td>
+      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d.toFixed(2)}%</td>
       <td>$${coin.market_cap.toLocaleString()}</td>
       <td>$${coin.total_volume.toLocaleString()}</td>
       <td>${coin.circulating_supply.toLocaleString()}</td>
-      <td><button onclick="setAlert('${coin.id}', '${coin.name}', ${coin.current_price}); event.stopPropagation();">🔔</button></td>
+      <td><button onclick="setAlert('${coin.id}','${coin.name}',${coin.current_price});event.stopPropagation();">🔔</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function setAlert(id,name,price){
+  const tgt = prompt(`Set alert for ${name} (current: $${price})`);
+  if(!tgt) return;
+  localStorage.setItem(`alert-${id}`, tgt);
+  alert(`Alert set for ${name} at $${tgt}`);
+}
+
+function addSortListeners(){
+  const headers = document.querySelectorAll("#crypto-table th");
+  const keys    = ['name','symbol','current_price','change_1h','change_24h','change_7d','market_cap','total_volume','circulating_supply'];
+  headers.forEach((h,i)=>h.addEventListener("click",()=>{
+    currentSortKey = keys[i] || 'market_cap';
+    sortAscending  = !sortAscending;
+    loadCoins();
+  }));
+}
+
+async function loadMetrics() {
+  const res = await fetch("https://api.coingecko.com/api/v3/global");
+  const json = await res.json();
+  document.getElementById("marketCap").innerText = `$${Number(json.data.total_market_cap.usd).toLocaleString()}`;
+  document.getElementById("marketCapChange").innerText = `${json.data.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
+}
+
+async function loadTrending() {
+  const res = await fetch("https://api.coingecko.com/api/v3/search/trending");
+  const json = await res.json();
+  const list = document.getElementById("trendingList");
+  list.innerHTML = "";
+  json.coins.forEach(c => {
+    const li = document.createElement("li");
+    li.innerText = `${c.item.name} (${c.item.symbol})`;
+    list.appendChild(li);
+  });
+}
+
+async function loadFearGreed() {
+  const res = await fetch("https://api.alternative.me/fng/");
+  const json = await res.json();
+  document.getElementById("fearValue").innerText = json.data[0].value;
+  document.getElementById("fearLabel").innerText = json.data[0].value_classification;
+}
+
+function drawSparkline(id, data) {
+  const ctx = document.getElementById(`spark-${id}`).getContext("2d");
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map((_, i) => i),
+      datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      responsive: false,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+function showChart(id, name) {
+  currentCoinId = id;
+  currentCoinName = name;
+  document.getElementById("chartTitle").innerText = name;
+  document.getElementById("chartModal").style.display = "block";
+  loadChart(currentRange);
+}
+
+function closeChart() {
+  document.getElementById("chartModal").style.display = "none";
+}
+
+const portfolio = [];
+
+async function addHolding() {
+  const coin = document.getElementById("coinInput").value.toLowerCase();
+  const buyPrice = parseFloat(document.getElementById("buyPriceInput").value);
+  const quantity = parseFloat(document.getElementById("quantityInput").value);
+
+  if (!coin || isNaN(buyPrice) || isNaN(quantity)) {
+    alert("Please enter valid coin, price, and quantity.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
+    const data = await res.json();
+    const currentPrice = data[coin]?.usd;
+
+    if (!currentPrice) throw new Error("Coin not found");
+
+    portfolio.push({ coin, buyPrice, quantity, currentPrice });
+    renderPortfolio();
+  } catch (err) {
+    alert("Failed to fetch coin price. Please check the coin ID.");
+    console.error(err);
+  }
+}
+
+function renderPortfolio() {
+  const tbody = document.querySelector("#portfolioTable tbody");
+  tbody.innerHTML = "";
+  portfolio.forEach(p => {
+    const value = p.quantity * p.currentPrice;
+    const profitLoss = (p.currentPrice - p.buyPrice) * p.quantity;
+    const percentChange = ((p.currentPrice - p.buyPrice) / p.buyPrice) * 100;
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${p.coin}</td>
+      <td>$${p.buyPrice.toFixed(2)}</td>
+      <td>$${p.currentPrice.toFixed(2)}</td>
+      <td>${p.quantity}</td>
+      <td>$${value.toFixed(2)}</td>
+      <td class="${getColorClass(profitLoss)}">$${profitLoss.toFixed(2)}</td>
+      <td class="${getColorClass(percentChange)}">${percentChange.toFixed(2)}%</td>
     `;
     tbody.appendChild(row);
   });
 }
 
-function setAlert(id, name, price) {
-  const target = prompt(`Set alert for ${name} (current: $${price})`);
-  if (target) {
-    localStorage.setItem(`alert-${id}`, target);
-    alert(`Alert set for ${name} at $${target}`);
-  }
-}
+function updateTweets(e) {
+  if (e.key === "Enter") {
+    const query = document.getElementById("tweetSearch").value.trim().toLowerCase() || "bitcoin";
+    document.getElementById("tweetTopic").innerText = query.toUpperCase();
 
-function addSortListeners() {
-  const headers = document.querySelectorAll("#crypto-table th");
-  const keys = ['name','symbol','current_price','change_1h','change_24h','change_7d','market_cap','total_volume','circulating_supply'];
-  headers.forEach((header, index) => {
-    header.addEventListener("click", () => {
-      currentSortKey = keys[index - 1] || 'market_cap';
-      sortAscending = !sortAscending;
-      loadCoins();
-    });
-  });
+    const fallbackNitter = [
+      'https://nitter.net',
+      'https://nitter.privacydev.net',
+      'https://nitter.snopyta.org'
+    ];
+
+    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
+  }
 }
 
 async function loadPolygonChart(symbol, interval) {
@@ -142,25 +253,49 @@ function toggleCandlestick() {
   loadChart(currentRange);
 }
 
-window.onload = () => {
-  // ✅ Fix Luxon adapter load order
+document.addEventListener("DOMContentLoaded", () => {
   const { DateTime } = luxon;
   Chart._adapters._date.override({
     _id: 'luxon',
-    formats: () => ({}),
-    parse: (value) => DateTime.fromMillis(value),
-    format: (time, format) => DateTime.fromMillis(time).toFormat(format),
-    add: (time, amount, unit) => DateTime.fromMillis(time).plus({ [unit]: amount }).toMillis(),
-    diff: (max, min, unit) => DateTime.fromMillis(max).diff(DateTime.fromMillis(min), unit).get(unit),
-    startOf: (time, unit) => DateTime.fromMillis(time).startOf(unit).toMillis(),
-    endOf: (time, unit) => DateTime.fromMillis(time).endOf(unit).toMillis()
+    formats: ()=>({}),
+    parse:   v => DateTime.fromMillis(v),
+    format:  (t,f)=>DateTime.fromMillis(t).toFormat(f),
+    add:     (t,n,u)=>DateTime.fromMillis(t).plus({[u]:n}).toMillis(),
+    diff:    (a,b,u)=>DateTime.fromMillis(a).diff(DateTime.fromMillis(b),u).get(u),
+    startOf: (t,u)=>DateTime.fromMillis(t).startOf(u).toMillis(),
+    endOf:   (t,u)=>DateTime.fromMillis(t).endOf(u).toMillis()
   });
 
   loadCoins();
+  loadMetrics();
+  loadTrending();
+  loadFearGreed();
   addSortListeners();
-  setInterval(loadCoins, 60000);
-  document.getElementById("loadMoreBtn").onclick = () => {
-    currentPage++;
-    loadCoins();
-  };
-};
+
+  setInterval(loadCoins, 60_000);
+  document.getElementById("loadMoreBtn")
+          .addEventListener("click", ()=>{
+            currentPage++;
+            loadCoins();
+          });
+          function renderPortfolio() {
+            const tbody = document.querySelector("#portfolioTable tbody");
+            tbody.innerHTML = "";
+            portfolio.forEach(entry => {
+              const value = entry.currentPrice * entry.quantity;
+              const profit = (entry.currentPrice - entry.buyPrice) * entry.quantity;
+              const percent = ((entry.currentPrice - entry.buyPrice) / entry.buyPrice) * 100;
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td>${entry.coin}</td>
+                <td>$${entry.buyPrice.toFixed(2)}</td>
+                <td>$${entry.currentPrice.toFixed(2)}</td>
+                <td>${entry.quantity}</td>
+                <td>$${value.toFixed(2)}</td>
+                <td class="${profit >= 0 ? 'positive' : 'negative'}">$${profit.toFixed(2)}</td>
+                <td class="${percent >= 0 ? 'positive' : 'negative'}">${percent.toFixed(2)}%</td>
+              `;
+              tbody.appendChild(row);
+            });
+          }
+          

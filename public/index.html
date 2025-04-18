@@ -1,199 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>HBhExchange</title>
-<!-- ✅ Load luxon BEFORE adapter -->
-<script src="https://cdn.jsdelivr.net/npm/luxon"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HBhExchange</title>
+
+  <!-- ✅ Load Luxon BEFORE adapter -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+
+  <!-- Tailwind (optional) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      background: #fff;
-      color: #111;
-    }
-    h1 {
-      text-align: center;
-      color: #2f54eb;
-      margin: 20px 0;
-    }
-    .container {
-      padding: 20px;
-    }
-    .metrics, .trending, .sentiment {
-      background: #f0f5ff;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 10px;
-      text-align: center;
-      border: 1px solid #eee;
-    }
-    th {
-      background: #2f54eb;
-      color: white;
-    }
-    .positive { color: green; }
-    .negative { color: red; }
-    #chartModal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-      z-index: 1000;
-      padding: 20px;
-    }
-    .chart-controls button {
-      margin: 5px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      background: #2f54eb;
-      color: white;
-      cursor: pointer;
-    }
-    #loadMoreBtn {
-      display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      background: #2f54eb;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .hover-row:hover {
-      background-color: #f3f4f6;
-      cursor: pointer;
-    }
-    @media (max-width: 768px) {
-      td:nth-child(3), td:nth-child(7), td:nth-child(8), td:nth-child(9),
-      th:nth-child(3), th:nth-child(7), th:nth-child(8), th:nth-child(9) {
-        display: none;
-      }
+    body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; margin:0; background:#fff; color:#111 }
+    h1 { text-align:center; color:#2f54eb; margin:20px 0 }
+    .container { padding:20px }
+    .metrics,.trending,.sentiment { background:#f0f5ff; padding:15px; margin:20px 0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.05) }
+    table { width:100%; border-collapse:collapse }
+    th,td { padding:10px; text-align:center; border:1px solid #eee }
+    th { background:#2f54eb; color:#fff }
+    .positive { color:green } .negative { color:red }
+    #chartModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:1000; padding:20px }
+    .chart-controls button { margin:5px; padding:8px 12px; border:none; border-radius:4px; background:#2f54eb; color:#fff; cursor:pointer }
+    #loadMoreBtn { display:block; margin:20px auto; padding:10px 20px; background:#2f54eb; color:#fff; border:none; border-radius:5px; cursor:pointer }
+    .hover-row:hover { background:#f3f4f6; cursor:pointer }
+    @media (max-width:768px){
+      td:nth-child(3),td:nth-child(7),td:nth-child(8),td:nth-child(9),
+      th:nth-child(3),th:nth-child(7),th:nth-child(8),th:nth-child(9){display:none}
     }
   </style>
 </head>
 <body class="bg-white text-gray-900 font-sans">
   <h1 class="text-3xl font-bold text-center text-blue-600 my-6">HBhExchange</h1>
+
   <div class="container mx-auto px-4">
     <!-- Market Metrics -->
-    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+    <div class="metrics shadow-md rounded-lg">
       <h2 class="text-xl font-semibold mb-2">Market Metrics</h2>
       <p><strong>Global Market Cap:</strong> <span id="marketCap"></span></p>
       <p><strong>24h Change:</strong> <span id="marketCapChange"></span></p>
     </div>
+
     <!-- Fear & Greed -->
-    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+    <div class="sentiment shadow-md rounded-lg">
       <h2 class="text-xl font-semibold mb-2">Fear & Greed Index</h2>
       <p><strong>Value:</strong> <span id="fearValue"></span> | <span id="fearLabel"></span></p>
     </div>
+
     <!-- Trending -->
-    <div class="bg-blue-50 shadow-md rounded-lg p-4 mb-6">
+    <div class="trending shadow-md rounded-lg">
       <h2 class="text-xl font-semibold mb-2">Trending Coins</h2>
       <ul id="trendingList" class="list-disc list-inside"></ul>
     </div>
+
+    <!-- Crypto Table -->
     <div class="overflow-x-auto shadow-lg rounded-lg">
       <table class="min-w-full bg-white">
         <thead class="bg-blue-600 text-white">
           <tr>
-            <th class="px-4 py-2">Logo</th>
-            <th class="px-4 py-2">Name</th>
-            <th class="px-4 py-2">Price</th>
-            <th class="px-4 py-2">1h%</th>
-            <th class="px-4 py-2">24h%</th>
-            <th class="px-4 py-2">7d%</th>
-            <th class="px-4 py-2">Market Cap</th>
-            <th class="px-4 py-2">Volume</th>
-            <th class="px-4 py-2">Last 7 Days</th>
+            <th>Logo</th><th>Name</th><th>Price</th><th>1h%</th><th>24h%</th>
+            <th>7d%</th><th>Market Cap</th><th>Volume</th><th>Supply</th><th>Alert</th>
           </tr>
         </thead>
-        <tbody id="crypto-table" class="text-sm text-gray-800"></tbody>
+        <tbody id="crypto-table"></tbody>
       </table>
     </div>
-    <button id="loadMoreBtn" class="block mt-6 mx-auto bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Load More</button>
+    <button id="loadMoreBtn">Load More</button>
   </div>
 
   <div class="container mt-10">
     <h3 class="text-lg font-semibold mb-2">💼 Mini Portfolio Tracker</h3>
-    <div class="flex flex-wrap gap-4 mb-4">
-      <input id="coinInput" placeholder="Coin ID (e.g. bitcoin)" class="border rounded px-3 py-1" />
-      <input id="buyPriceInput" placeholder="Buy Price" type="number" class="border rounded px-3 py-1" />
-      <input id="quantityInput" placeholder="Quantity" type="number" class="border rounded px-3 py-1" />
+    <div class="flex gap-4 mb-4">
+      <input id="coinInput" placeholder="Coin ID (e.g. bitcoin)" class="border px-3 py-1 rounded"/>
+      <input id="buyPriceInput" placeholder="Buy Price" type="number" class="border px-3 py-1 rounded"/>
+      <input id="quantityInput" placeholder="Quantity" type="number" class="border px-3 py-1 rounded"/>
       <button onclick="addHolding()" class="bg-blue-500 text-white px-3 py-1 rounded">Add</button>
     </div>
     <table id="portfolioTable" class="min-w-full text-sm">
       <thead class="bg-blue-600 text-white">
-        <tr>
-          <th>Coin</th>
-          <th>Buy Price</th>
-          <th>Current Price</th>
-          <th>Quantity</th>
-          <th>Value</th>
-          <th>P/L</th>
-          <th>% Change</th>
-        </tr>
+        <tr><th>Coin</th><th>Buy Price</th><th>Current Price</th><th>Quantity</th><th>Value</th><th>P/L</th><th>% Change</th></tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
-  <!-- Chart Modal -->
-  <div id="chartModal" class="fixed top-0 left-0 w-full h-full bg-white z-50 hidden p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h3 id="chartTitle" class="text-xl font-bold"></h3>
-      <button onclick="closeChart()" class="bg-red-500 text-white px-3 py-1 rounded">Close</button>
-    </div>
-    <div class="flex gap-2 mb-4">
-      <button onclick="setChartMetric('prices')" class="bg-blue-100 px-3 py-1 rounded">Price</button>
-      <button onclick="setChartMetric('market_caps')" class="bg-blue-100 px-3 py-1 rounded">Market Cap</button>
-      <button onclick="setChartMetric('total_volumes')" class="bg-blue-100 px-3 py-1 rounded">Volume</button>
-    </div>
-    <div class="flex gap-2 mb-4">
-      <button onclick="toggleChartView('1D')" class="bg-blue-100 px-3 py-1 rounded">1D</button>
-      <button onclick="toggleChartView('7D')" class="bg-blue-100 px-3 py-1 rounded">7D</button>
-      <button onclick="toggleChartView('1M')" class="bg-blue-100 px-3 py-1 rounded">1M</button>
-      <button onclick="toggleChartView('1Y')" class="bg-blue-100 px-3 py-1 rounded">1Y</button>
-      <button onclick="toggleChartView('ALL')" class="bg-blue-100 px-3 py-1 rounded">ALL</button>
-      <button onclick="toggleCandlestick()" class="bg-gray-100 px-3 py-1 rounded">Candlestick</button>
-      <button onclick="toggleFullScreenChart()" class="bg-gray-200 px-3 py-1 rounded">Full Screen</button>
-    </div>
-    <canvas id="priceChart" height="400"></canvas>
-  </div>
-
   <!-- Live Tweets -->
   <div class="container mt-10">
     <h3 class="text-lg font-semibold mb-2">🔊 Live Tweets (<span id="tweetTopic">Bitcoin</span>)</h3>
-    <input 
-      type="text" 
-      id="tweetSearch" 
-      placeholder="Enter coin (e.g. ETH, SOL, DOGE)" 
-      onkeyup="updateTweets(event)" 
-      class="border px-3 py-1 rounded w-72 mb-4"
-    />
-    <div id="tweetFeed">
-      <iframe 
-        id="tweetIframe" 
-        width="100%" 
-        height="500" 
-        style="border:1px solid #eee;border-radius:8px;" 
-        src="https://nitter.net/search?f=tweets&q=bitcoin"
-      ></iframe>
+    <input id="tweetSearch" class="border px-3 py-1 rounded w-72 mb-4" placeholder="Search coin..." onkeyup="updateTweets(event)"/>
+    <iframe id="tweetIframe"
+            src="https://nitter.net/search?f=tweets&q=bitcoin"
+            style="width:100%;height:500px;border:1px solid #eee;border-radius:8px;">
+    </iframe>
+  </div>
+
+  <div id="chartModal">
+    <div class="flex justify-between mb-4">
+      <h3 id="chartTitle" class="text-xl font-bold"></h3>
+      <button onclick="closeChart()">Close</button>
     </div>
+    <div class="chart-controls mb-4">
+      <button onclick="setChartMetric('prices')">Price</button>
+      <button onclick="setChartMetric('market_caps')">Market Cap</button>
+      <button onclick="setChartMetric('total_volumes')">Volume</button>
+    </div>
+    <div class="chart-controls mb-4">
+      <button onclick="toggleChartView('1D')">1D</button>
+      <button onclick="toggleChartView('7D')">7D</button>
+      <button onclick="toggleChartView('1M')">1M</button>
+      <button onclick="toggleChartView('1Y')">1Y</button>
+      <button onclick="toggleChartView('ALL')">ALL</button>
+      <button onclick="toggleCandlestick()">Candlestick</button>
+    </div>
+    <canvas id="priceChart" height="400"></canvas>
   </div>
   
   <script>
@@ -259,10 +181,6 @@ function setChartMetric(metric) {
     }
   });
 }
-    function loadMore() {
-      currentPage++;
-      loadCoins(currentPage);
-    }
 
     function drawSparkline(id, data) {
       const ctx = document.getElementById(`spark-${id}`).getContext("2d");
@@ -344,13 +262,26 @@ function setChartMetric(metric) {
   }
 }
 
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
+  const { DateTime } = luxon;
+  Chart._adapters._date.override({
+    _id: 'luxon',
+    formats: () => ({}),
+    parse: (value) => DateTime.fromMillis(value),
+    format: (time, format) => DateTime.fromMillis(time).toFormat(format),
+    add: (time, amount, unit) => DateTime.fromMillis(time).plus({ [unit]: amount }).toMillis(),
+    diff: (max, min, unit) => DateTime.fromMillis(max).diff(DateTime.fromMillis(min), unit).get(unit),
+    startOf: (time, unit) => DateTime.fromMillis(time).startOf(unit).toMillis(),
+    endOf: (time, unit) => DateTime.fromMillis(time).endOf(unit).toMillis(),
+  });
+
   loadCoins();
   loadMetrics();
   loadTrending();
   loadFearGreed();
   document.getElementById("loadMoreBtn").addEventListener("click", loadMore);
 });
+
 
     function updateTweets(e) {
   if (e.key === "Enter") {
@@ -405,9 +336,7 @@ function toggleChartView(range) {
   currentRange = range;
   loadChart(range);
 }
-
-
-<!-- At the very end of the file -->
-<script src="main.js"></script>
+<!-- your JS bundle -->
+  <script src="main.js"></script>
 </body>
 </html>
