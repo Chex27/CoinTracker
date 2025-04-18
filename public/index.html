@@ -229,7 +229,6 @@ function setChartMetric(metric) {
       document.getElementById("fearLabel").innerText = json.data[0].value_classification;
     }
     function renderTable(data) {
-  const tbody = document.getElementById("crypto-table");
   if (currentPage === 1) tbody.innerHTML = "";
 
   data.forEach(coin => {
@@ -281,6 +280,10 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFearGreed();
   document.getElementById("loadMoreBtn").addEventListener("click", loadMore);
 });
+function loadMore() {
+  currentPage++;
+  loadCoins();
+}
 
 
     function updateTweets(e) {
@@ -336,7 +339,7 @@ function toggleChartView(range) {
   currentRange = range;
   loadChart(range);
 }
-<!-- your JS bundle -->
-  <script src="main.js"></script>
+
+<script src="main.js"></script>
 </body>
 </html>
