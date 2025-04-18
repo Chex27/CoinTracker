@@ -23,6 +23,7 @@ function loadCoins() {
     })
     .then(data => {
       console.log("Received coin data:", data); // Add this
+      const tbody = document.getElementById("crypto-table");
       renderTable(data);
     })
     .catch(err => console.error("Error loading coins:", err));
@@ -36,22 +37,27 @@ function renderTable(data){
     sortAscending
       ? a[currentSortKey] - b[currentSortKey]
       : b[currentSortKey] - a[currentSortKey]
-  ).forEach(coin=>{
+  ).forEach(coin=>
     const tr = document.createElement("tr");
     tr.classList.add("hover-row");
     tr.onclick = ()=>showChart(coin.id,coin.name);
     tr.innerHTML = `
-      <td><img src="${coin.image}" width="24"/></td>
-      <td>${coin.name}</td>
-      <td>${coin.symbol.toUpperCase()}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
-      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d.toFixed(2)}%</td>
-      <td>$${coin.market_cap.toLocaleString()}</td>
-      <td>$${coin.total_volume.toLocaleString()}</td>
-      <td>${coin.circulating_supply.toLocaleString()}</td>
-      <td><button onclick="setAlert('${coin.id}','${coin.name}',${coin.current_price});event.stopPropagation();">🔔</button></td>`;
+tr.innerHTML = `
+  <td><img src="${coin.image}" width="24"/></td>
+  <td>${coin.name}</td>
+  <td>${coin.symbol.toUpperCase()}</td>
+  <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
+  <td class="${getColorClass(coin.change_24h)}">${coin.change_24h.toFixed(2)}%</td>
+  <td class="${getColorClass(coin.change_7d)}">${coin.change_7d.toFixed(2)}%</td>
+  <td>$${coin.market_cap.toLocaleString()}</td>
+  <td>$${coin.total_volume.toLocaleString()}</td>
+  <td>${coin.circulating_supply.toLocaleString()}</td>
+  <td><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
+  <td><button onclick="setAlert('${coin.id}','${coin.name}',${coin.current_price});event.stopPropagation();">🔔</button></td>
+`;
+
     tbody.appendChild(tr);
+
   });
 }
 
