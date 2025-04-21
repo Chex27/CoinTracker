@@ -15,19 +15,19 @@ const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
 function loadCoins() {
-  console.log("Loading coins..."); // Add this
+  console.log("Loading coins, page:", currentPage);
   fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
-    .then(r => {
-      if (!r.ok) throw new Error("Network response was not ok");
-      return r.json();
+    .then(res => {
+      if (!res.ok) throw new Error("Network response was not ok");
+      return res.json();
     })
     .then(data => {
-      console.log("Received coin data:", data); // Add this
-      const tbody = document.getElementById("crypto-table");
-      renderTable(data);
+      console.log("Received coin data:", data);
+      renderTable(data); // this just appends rows now
     })
     .catch(err => console.error("Error loading coins:", err));
 }
+
 
 
 function renderTable(data) {
@@ -289,11 +289,10 @@ document.addEventListener("DOMContentLoaded", () => {
   addSortListeners();
 
   setInterval(loadCoins, 60_000);
-  document.getElementById("loadMoreBtn")
-          .addEventListener("click", ()=>{
-            currentPage++;
-            loadCoins();
-          });
+  document.getElementById("loadMoreBtn").addEventListener("click", () => {
+    currentPage++;
+    loadCoins(); // 🔁 load next page
+  });  
           function renderPortfolio() {
             const tbody = document.querySelector("#portfolioTable tbody");
             tbody.innerHTML = "";
