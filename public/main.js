@@ -293,24 +293,5 @@ document.addEventListener("DOMContentLoaded", () => {
     currentPage++;
     loadCoins(); // 🔁 load next page
   });  
-          function renderPortfolio() {
-            const tbody = document.querySelector("#portfolioTable tbody");
-            tbody.innerHTML = "";
-            portfolio.forEach(entry => {
-              const value = entry.currentPrice * entry.quantity;
-              const profit = (entry.currentPrice - entry.buyPrice) * entry.quantity;
-              const percent = ((entry.currentPrice - entry.buyPrice) / entry.buyPrice) * 100;
-              const row = document.createElement("tr");
-              row.innerHTML = `
-                <td>${entry.coin}</td>
-                <td>$${entry.buyPrice.toFixed(2)}</td>
-                <td>$${entry.currentPrice.toFixed(2)}</td>
-                <td>${entry.quantity}</td>
-                <td>$${value.toFixed(2)}</td>
-                <td class="${profit >= 0 ? 'positive' : 'negative'}">$${profit.toFixed(2)}</td>
-                <td class="${percent >= 0 ? 'positive' : 'negative'}">${percent.toFixed(2)}%</td>
-              `;
-              tbody.appendChild(row);
-            });
-          }
+
           
