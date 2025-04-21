@@ -56,6 +56,7 @@ tr.innerHTML = `
   <td><button onclick="setAlert('${coin.id}','${coin.name}',${coin.current_price});event.stopPropagation();">🔔</button></td>
 `;
 
+
     tbody.appendChild(tr);
 
   });
