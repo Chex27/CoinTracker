@@ -272,6 +272,7 @@ function setChartMetric(metric) {
       document.getElementById("fearLabel").innerText = json.data[0].value_classification;
     }
     function renderTable(data) {
+  const tbody = document.getElementById("crypto-table"); // ✅ THIS WAS MISSING in your <script> in index.html
   if (currentPage === 1) tbody.innerHTML = "";
 
   data.forEach(coin => {
@@ -293,6 +294,7 @@ function setChartMetric(metric) {
     drawSparkline(coin.id, coin.sparkline_in_7d?.price || []);
   });
 }
+
 
     async function loadCoins(page = 1) {
   try {
