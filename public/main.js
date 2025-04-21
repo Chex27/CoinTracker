@@ -15,7 +15,7 @@ const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
 function loadCoins() {
-  console.log("Loading coins, page:", currentPage);
+  console.log(`Rendering coins page ${currentPage}`);
   fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
     .then(res => {
       if (!res.ok) throw new Error("Network response was not ok");
@@ -232,11 +232,9 @@ async function loadChart(range = '1D') {
       const polygonData = await loadPolygonChart(currentCoinId, interval);
       chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
     } else {
-      const days = daysMap[range];
-      const url = `https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      chartData = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
+      const interval = intervalMap[range];
+      const polygonData = await loadPolygonChart(currentCoinId, interval);
+      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));      
     }
 
     priceChart = new Chart(ctx, {
