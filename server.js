@@ -6,6 +6,10 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const bodyParser = require('body-parser');
+app.use(cors({
+  origin: 'https://cointracker-yxmu.onrender.com',
+  credentials: true
+}));
 
 const app = express();
 const PORT = process.env.PORT || 10000; // 🔥 Render uses 10000
@@ -34,16 +38,28 @@ passport.deserializeUser((id, done) => {
   done(null, user || false);
 });
 
-// Auth Routes
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+// ✅ Auth Middleware
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect('/login');
+}
+
+// ✅ Auth Routes
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 app.post('/login', passport.authenticate('local', {
   failureRedirect: '/login',
   successRedirect: '/dashboard'
 }));
-app.get('/dashboard', (req, res) => {
-  if (!req.isAuthenticated()) return res.redirect('/login');
+
+// ✅ Protected dashboard route
+app.get('/dashboard', isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+
 app.get('/logout', (req, res, next) => {
   req.logout(err => {
     if (err) return next(err);
@@ -55,7 +71,7 @@ app.get('/logout', (req, res, next) => {
 app.get('/api/prices', async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
+    const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`, {
       params: {
         vs_currency: 'usd',
         order: 'market_cap_desc',
@@ -106,7 +122,23 @@ app.get('/api/polygon/:symbol/:interval', async (req, res) => {
   }
 });
 
+// ✅ Serve index.html only for dashboard after auth
+app.get('/dashboard', isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ✅ Always serve static files correctly
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ✅ Catch-all fallback (optional, use with care)
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
+
 // ✅ Start Server
 app.listen(PORT, () => {
-  console.log(`✅ HeckBit server running on port ${PORT}`);
+  console.log(`✅ HBhExchange server running on port ${PORT}`);
+});
+app.use((req, res) => {
+  res.status(404).send('Page not found');
 });
