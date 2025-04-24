@@ -23,13 +23,10 @@ function loadCoins() {
     })
     .then(data => {
       console.log("Received coin data:", data);
-      renderTable(data); // this just appends rows now
+      renderTable(data);
     })
     .catch(err => console.error("Error loading coins:", err));
-    
 }
-
-
 
 function renderTable(data) {
   const tbody = document.getElementById("crypto-table");
@@ -62,7 +59,6 @@ function renderTable(data) {
     drawSparkline(coin.id, coin.sparkline_in_7d?.price || []);
   });
 }
-
 
 function setAlert(id,name,price){
   const tgt = prompt(`Set alert for ${name} (current: $${price})`);
@@ -114,9 +110,8 @@ function drawSparkline(id, data) {
   if (!data || !Array.isArray(data) || data.length === 0) {
     console.error("Skipping drawSparkline for empty data:", id);
     return;
-  }  
+  }
 
-  // ✅ Destroy existing chart
   if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
 
   const ctx = canvas.getContext("2d");
@@ -140,7 +135,6 @@ function drawSparkline(id, data) {
     }
   });
 }
-
 
 function showChart(id, name) {
   currentCoinId = id;
@@ -170,16 +164,16 @@ async function addHolding() {
     const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
     const data = await res.json();
     const currentPrice = data[coin]?.usd;
-  
+
     if (!currentPrice) throw new Error("Coin not found");
-  
+
     portfolio.push({ coin, buyPrice, quantity, currentPrice });
     renderPortfolio();
   } catch (err) {
     alert("Failed to fetch coin price. Please check the coin ID.");
     console.error(err);
-  }  
-
+  }
+}
 
 function renderPortfolio() {
   const tbody = document.querySelector("#portfolioTable tbody");
@@ -244,8 +238,6 @@ async function loadChart(range = '1D') {
     priceChart.destroy();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
-  
-  const ctx = document.getElementById("priceChart").getContext("2d");
 
   try {
     let chartData;
@@ -257,7 +249,7 @@ async function loadChart(range = '1D') {
     } else {
       const interval = intervalMap[range];
       const polygonData = await loadPolygonChart(currentCoinId, interval);
-      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));      
+      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));
     }
 
     priceChart = new Chart(ctx, {
@@ -312,7 +304,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(loadCoins, 60_000);
   document.getElementById("loadMoreBtn").addEventListener("click", () => {
     currentPage++;
-    loadCoins(); // 🔁 load next page
-  });  
-
-          
+    loadCoins();
+  });
+});
