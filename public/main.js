@@ -239,10 +239,10 @@ async function loadChart(range = '1D') {
     '1Y': '365',
     'ALL': 'max'
   };
+  const ctx = document.getElementById("priceChart").getContext("2d");
   if (priceChart) {
     priceChart.destroy();
-    const ctx = document.getElementById("priceChart").getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // 🔥 this clears canvas safely
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   }
   
   const ctx = document.getElementById("priceChart").getContext("2d");
