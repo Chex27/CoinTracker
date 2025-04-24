@@ -114,7 +114,6 @@ function drawSparkline(id, data) {
 
   if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
 
-  const ctx = canvas.getContext("2d");
   new Chart(ctx, {
     type: 'line',
     data: {
@@ -237,7 +236,7 @@ async function loadChart(range = '1D') {
   if (priceChart) {
     priceChart.destroy();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  }
+  }  
 
   try {
     let chartData;
