@@ -184,91 +184,6 @@ function setChartMetric(metric) {
   currentMetric = metric;
   loadChart(currentRange); // reload chart with new metric
 }
-
-async function loadChart(range = '1D') {
-  const intervalMap = {
-    '1D': '1min',
-    '7D': '15min',
-    '1M': '1d',
-    '1Y': '7d',
-    'ALL': '30d'
-  };
-  const interval = intervalMap[range];
-
-  const ctx = document.getElementById("priceChart").getContext("2d");
-  if (priceChart) priceChart.destroy();
-
-  try {
-    const polygonData = await loadPolygonChart(currentCoinId, interval);
-    let chartData;
-
-    if (isCandlestick) {
-      chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
-    } else {
-      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));
-    }
-
-    priceChart = new Chart(ctx, {
-      type: isCandlestick ? 'candlestick' : 'line',
-      data: {
-        datasets: [
-          isCandlestick
-            ? { label: 'OHLC', data: chartData, color: { up: '#26a69a', down: '#ef5350' } }
-            : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } },
-          y: { beginAtZero: false }
-        }
-      }
-    });
-  } catch (err) {
-    console.error("Chart Load Error:", err);
-    alert("Failed to load chart data.");
-  }
-}
-
-function drawSparkline(id, data) {
-  const canvasId = `spark-${id}`;
-  const canvas = document.getElementById(canvasId);
-
-  // ✅ Safeguard: check if data is valid
-  if (!data || !Array.isArray(data)) {
-    console.error("Invalid chart data for sparkline", id, data);
-    return;
-  }
-
-  // ✅ Destroy existing chart
-  if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
-
-  const ctx = canvas.getContext("2d");
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.map((_, i) => i),
-      datasets: [{
-        data,
-        borderColor: '#d946ef',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: { x: { display: false }, y: { display: false } },
-      responsive: false,
-      maintainAspectRatio: false
-    }
-  });
-}
-
-
     function closeChart() {
       document.getElementById("chartModal").style.display = "none";
     }
@@ -298,29 +213,6 @@ function drawSparkline(id, data) {
       document.getElementById("fearValue").innerText = json.data[0].value;
       document.getElementById("fearLabel").innerText = json.data[0].value_classification;
     }
-    function renderTable(data) {
-  const tbody = document.getElementById("crypto-table"); // ✅ THIS WAS MISSING in your <script> in index.html
-  if (currentPage === 1) tbody.innerHTML = "";
-
-  data.forEach(coin => {
-    const row = document.createElement("tr");
-    row.classList.add("hover-row");
-    row.onclick = () => showChart(coin.id, coin.name);
-    row.innerHTML = `
-      <td><img src="${coin.image}" width="24" /></td>
-      <td>${coin.name}</td>
-      <td>$${coin.current_price.toFixed(2)}</td>
-      <td class="${coin.price_change_percentage_1h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_1h_in_currency?.toFixed(2)}%</td>
-      <td class="${coin.price_change_percentage_24h_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_24h_in_currency?.toFixed(2)}%</td>
-      <td class="${coin.price_change_percentage_7d_in_currency >= 0 ? 'positive' : 'negative'}">${coin.price_change_percentage_7d_in_currency?.toFixed(2)}%</td>
-      <td>$${coin.market_cap.toLocaleString()}</td>
-      <td>$${coin.total_volume.toLocaleString()}</td>
-      <td><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
-    `;
-    tbody.appendChild(row);
-    drawSparkline(coin.id, coin.sparkline_in_7d?.price || []);
-  });
-}
 
 
     async function loadCoins(page = 1) {
@@ -357,34 +249,9 @@ function loadMore() {
   loadCoins();
 }
 
-
-    function updateTweets(e) {
-  if (e.key === "Enter") {
-    const query = document.getElementById("tweetSearch").value.trim().toLowerCase() || "bitcoin";
-    document.getElementById("tweetTopic").innerText = query.toUpperCase();
-
-    // Use a working Nitter instance
-    const fallbackNitter = [
-      'https://nitter.net',
-      'https://nitter.privacydev.net',
-      'https://nitter.snopyta.org'
-    ];
-
-    // Try first instance
-    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
-  }
-}
 const portfolio = [];
 
-async function addHolding() {
-  const coin = document.getElementById("coinInput").value.toLowerCase();
-  const buyPrice = parseFloat(document.getElementById("buyPriceInput").value);
-  const quantity = parseFloat(document.getElementById("quantityInput").value);
 
-  if (!coin || isNaN(buyPrice) || isNaN(quantity)) {
-    alert("Please enter valid coin, price, and quantity.");
-    return;
-  }
 
   try {
     const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
@@ -400,18 +267,11 @@ async function addHolding() {
     console.error(err);
   }
 }
-function showChart(id, name) {
-  currentCoinId = id;
-  currentCoinName = name;
-  document.getElementById("chartTitle").innerText = name;
-  document.getElementById("chartModal").style.display = "block";
-  loadChart(currentRange);
-}
 function toggleChartView(range) {
   currentRange = range;
   loadChart(range);
 }
 
-</script>
+<script src="main.js"></script>
 </body>
 </html>
