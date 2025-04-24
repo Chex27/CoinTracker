@@ -185,62 +185,89 @@ function setChartMetric(metric) {
   loadChart(currentRange); // reload chart with new metric
 }
 
-    async function loadChart(range = '1D') {
-  const daysMap = {
-    "1D": "1",
-    "7D": "7",
-    "1M": "30",
-    "1Y": "365",
-    "ALL": "max"
+async function loadChart(range = '1D') {
+  const intervalMap = {
+    '1D': '1min',
+    '7D': '15min',
+    '1M': '1d',
+    '1Y': '7d',
+    'ALL': '30d'
   };
-  const days = daysMap[range];
-  const res = await fetch(`https://api.coingecko.com/api/v3/coins/${currentCoinId}/market_chart?vs_currency=usd&days=${days}`);
-  const json = await res.json();
-  const data = json[currentMetric].map(p => ({ x: p[0], y: p[1] }));
+  const interval = intervalMap[range];
 
   const ctx = document.getElementById("priceChart").getContext("2d");
   if (priceChart) priceChart.destroy();
 
-  priceChart = new Chart(ctx, {
-    type: isCandlestick ? 'candlestick' : 'line',
+  try {
+    const polygonData = await loadPolygonChart(currentCoinId, interval);
+    let chartData;
+
+    if (isCandlestick) {
+      chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
+    } else {
+      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));
+    }
+
+    priceChart = new Chart(ctx, {
+      type: isCandlestick ? 'candlestick' : 'line',
+      data: {
+        datasets: [
+          isCandlestick
+            ? { label: 'OHLC', data: chartData, color: { up: '#26a69a', down: '#ef5350' } }
+            : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } },
+          y: { beginAtZero: false }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Chart Load Error:", err);
+    alert("Failed to load chart data.");
+  }
+}
+
+function drawSparkline(id, data) {
+  const canvasId = `spark-${id}`;
+  const canvas = document.getElementById(canvasId);
+
+  // ✅ Safeguard: check if data is valid
+  if (!data || !Array.isArray(data)) {
+    console.error("Invalid chart data for sparkline", id, data);
+    return;
+  }
+
+  // ✅ Destroy existing chart
+  if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
+
+  const ctx = canvas.getContext("2d");
+  new Chart(ctx, {
+    type: 'line',
     data: {
+      labels: data.map((_, i) => i),
       datasets: [{
-        label: currentCoinName,
         data,
-        borderColor: currentMetric === 'prices' ? '#2f54eb' : '#00b894',
-        backgroundColor: 'rgba(47,84,235,0.1)',
+        borderColor: '#d946ef',
         fill: true,
-        tension: 0.3
+        tension: 0.3,
+        pointRadius: 0
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { type: 'time', time: { unit: 'day' } },
-        y: { beginAtZero: false }
-      },
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      responsive: false,
+      maintainAspectRatio: false
     }
   });
 }
 
-    function drawSparkline(id, data) {
-      const ctx = document.getElementById(`spark-${id}`).getContext("2d");
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: data.map((_, i) => i),
-          datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: { x: { display: false }, y: { display: false } },
-          responsive: false,
-          maintainAspectRatio: false
-        }
-      });
-    }
 
     function closeChart() {
       document.getElementById("chartModal").style.display = "none";

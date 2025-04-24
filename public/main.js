@@ -26,6 +26,7 @@ function loadCoins() {
       renderTable(data); // this just appends rows now
     })
     .catch(err => console.error("Error loading coins:", err));
+    
 }
 
 
@@ -107,12 +108,29 @@ async function loadFearGreed() {
 }
 
 function drawSparkline(id, data) {
-  const ctx = document.getElementById(`spark-${id}`).getContext("2d");
+  const canvasId = `spark-${id}`;
+  const canvas = document.getElementById(canvasId);
+
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    console.error("Skipping drawSparkline for empty data:", id);
+    return;
+  }  
+
+  // ✅ Destroy existing chart
+  if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
+
+  const ctx = canvas.getContext("2d");
   new Chart(ctx, {
     type: 'line',
     data: {
       labels: data.map((_, i) => i),
-      datasets: [{ data, borderColor: '#d946ef', fill: true, tension: 0.3, pointRadius: 0 }]
+      datasets: [{
+        data,
+        borderColor: '#d946ef',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0
+      }]
     },
     options: {
       plugins: { legend: { display: false } },
@@ -122,6 +140,7 @@ function drawSparkline(id, data) {
     }
   });
 }
+
 
 function showChart(id, name) {
   currentCoinId = id;
@@ -151,16 +170,16 @@ async function addHolding() {
     const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coin}&vs_currencies=usd`);
     const data = await res.json();
     const currentPrice = data[coin]?.usd;
-
+  
     if (!currentPrice) throw new Error("Coin not found");
-
+  
     portfolio.push({ coin, buyPrice, quantity, currentPrice });
     renderPortfolio();
   } catch (err) {
     alert("Failed to fetch coin price. Please check the coin ID.");
     console.error(err);
-  }
-}
+  }  
+
 
 function renderPortfolio() {
   const tbody = document.querySelector("#portfolioTable tbody");
@@ -220,9 +239,13 @@ async function loadChart(range = '1D') {
     '1Y': '365',
     'ALL': 'max'
   };
-
+  if (priceChart) {
+    priceChart.destroy();
+    const ctx = document.getElementById("priceChart").getContext("2d");
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // 🔥 this clears canvas safely
+  }
+  
   const ctx = document.getElementById("priceChart").getContext("2d");
-  if (priceChart) priceChart.destroy();
 
   try {
     let chartData;
