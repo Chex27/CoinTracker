@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors'); // ✅ this can go up here
 const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
@@ -6,12 +7,10 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const bodyParser = require('body-parser');
-app.use(cors({
-  origin: 'https://cointracker-yxmu.onrender.com',
-  credentials: true
-}));
 
-const app = express();
+const app = express(); // ✅ NOW this exists
+app.use(cors());       // ✅ So this won't crash anymore
+
 const PORT = process.env.PORT || 10000; // 🔥 Render uses 10000
 
 // Middleware
