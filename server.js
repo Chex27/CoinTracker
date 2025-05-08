@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors'); // ✅ this can go up here
-const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
 const passport = require('passport');

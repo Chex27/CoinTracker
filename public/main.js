@@ -50,7 +50,7 @@ function renderTable(data) {
       <td><img src="${coin.image}" width="24"/></td>
       <td>${coin.name}</td>
       <td>${coin.symbol.toUpperCase()}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.current_price?.toFixed(2) || 'N/A'}</td>
+      <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2) || 'N/A'}%</td>
       <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2) || 'N/A'}%</td>
       <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2) || 'N/A'}%</td>
       <td>$${coin.market_cap?.toLocaleString() || 'N/A'}</td>
@@ -64,6 +64,7 @@ function renderTable(data) {
     drawSparkline(coin.id, coin.sparkline_in_7d?.price || []);
   });
 }
+
 
 function setAlert(id,name,price){
   const tgt = prompt(`Set alert for ${name} (current: $${price})`);
