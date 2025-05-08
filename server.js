@@ -66,11 +66,13 @@ app.get('/logout', (req, res, next) => {
   });
 });
 
-// ✅ CoinGecko Prices Endpoint
+const axios = require('axios'); // You're using axios
+
 app.get('/api/prices', async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const { data } = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+
+    const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
       params: {
         vs_currency: 'usd',
         order: 'market_cap_desc',
@@ -80,12 +82,14 @@ app.get('/api/prices', async (req, res) => {
         sparkline: true
       }
     });
-    res.json(data);    
+
+    res.json(response.data); // ✅ Return data properly
   } catch (err) {
     console.error("Error fetching coin data:", err.message);
     res.status(500).json({ error: 'Failed to fetch coin data' });
   }
 });
+
 
 // ✅ Polygon OHLC Endpoint
 app.get('/api/polygon/:symbol/:interval', async (req, res) => {
