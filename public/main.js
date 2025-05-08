@@ -10,13 +10,13 @@ let isCandlestick   = false;
 let currentSortKey  = 'market_cap';
 let sortAscending   = false;
 
-const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
+const RENDER_BACKEND_URL = "";
 
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
 function loadCoins() {
   console.log(`Rendering coins page ${currentPage}`);
-  fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
+  fetch(`/api/prices?page=${currentPage}`)
     .then(res => {
       if (!res.ok) throw new Error("Network response was not ok");
       return res.json();
@@ -113,7 +113,7 @@ function drawSparkline(id, data) {
   }
 
   if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
-
+  const ctx = canvas.getContext("2d");
   new Chart(ctx, {
     type: 'line',
     data: {
