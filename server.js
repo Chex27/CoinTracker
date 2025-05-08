@@ -70,7 +70,7 @@ app.get('/logout', (req, res, next) => {
 app.get('/api/prices', async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const response = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d`, {
+    const { data } = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
       params: {
         vs_currency: 'usd',
         order: 'market_cap_desc',
@@ -80,7 +80,7 @@ app.get('/api/prices', async (req, res) => {
         sparkline: true
       }
     });
-    res.json(response.data);
+    res.json(data);    
   } catch (err) {
     console.error("Error fetching coin data:", err.message);
     res.status(500).json({ error: 'Failed to fetch coin data' });
