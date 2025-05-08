@@ -1,4 +1,3 @@
-// ✅hbhexchange Pro - Fully Integrated Main.js
 console.log("Script loaded");
 let currentPage     = 1;
 let priceChart;
@@ -6,11 +5,17 @@ let currentCoinId   = "bitcoin";
 let currentCoinName = "Bitcoin";
 let currentRange    = '1D';
 let currentMetric   = 'prices';
+function setChartMetric(metric) {
+  currentMetric = metric;
+  isCandlestick = false; // Only show line for alt metrics
+  loadChart(currentRange);
+}
+
 let isCandlestick   = false;
 let currentSortKey  = 'market_cap';
 let sortAscending   = false;
 
-const RENDER_BACKEND_URL = "";
+const RENDER_BACKEND_URL = "https://hbhexchange.onrender.com";
 
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
@@ -45,12 +50,12 @@ function renderTable(data) {
       <td><img src="${coin.image}" width="24"/></td>
       <td>${coin.name}</td>
       <td>${coin.symbol.toUpperCase()}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.current_price.toFixed(2)}</td>
-      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h.toFixed(2)}%</td>
-      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d.toFixed(2)}%</td>
-      <td>$${coin.market_cap.toLocaleString()}</td>
-      <td>$${coin.total_volume.toLocaleString()}</td>
-      <td>${coin.circulating_supply.toLocaleString()}</td>
+      <td class="${getColorClass(coin.change_1h)}">${coin.current_price?.toFixed(2) || 'N/A'}</td>
+      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2) || 'N/A'}%</td>
+      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2) || 'N/A'}%</td>
+      <td>$${coin.market_cap?.toLocaleString() || 'N/A'}</td>
+      <td>$${coin.total_volume?.toLocaleString() || 'N/A'}</td>
+      <td>${coin.circulating_supply?.toLocaleString() || 'N/A'}</td>
       <td><canvas id="spark-${coin.id}" width="90" height="30"></canvas></td>
       <td><button onclick="setAlert('${coin.id}','${coin.name}',${coin.current_price});event.stopPropagation();">🔔</button></td>
     `;
@@ -106,14 +111,11 @@ async function loadFearGreed() {
 function drawSparkline(id, data) {
   const canvasId = `spark-${id}`;
   const canvas = document.getElementById(canvasId);
-
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    console.error("Skipping drawSparkline for empty data:", id);
-    return;
-  }
+  if (!canvas || !data || !Array.isArray(data) || data.length === 0) return;
 
   if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
   const ctx = canvas.getContext("2d");
+
   new Chart(ctx, {
     type: 'line',
     data: {
@@ -145,6 +147,90 @@ function showChart(id, name) {
 
 function closeChart() {
   document.getElementById("chartModal").style.display = "none";
+}
+
+async function loadPolygonChart(symbol, interval) {
+  const url = `${RENDER_BACKEND_URL}/api/polygon/${symbol}/${interval}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.prices;
+}
+
+async function loadChart(range = '1D') {
+  const intervalMap = {
+    '1D': '1min',
+    '7D': '15min',
+    '1M': '1d',
+    '1Y': '7d',
+    'ALL': '30d'
+  };
+  const ctx = document.getElementById("priceChart").getContext("2d");
+  if (priceChart) {
+    priceChart.destroy();
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+
+  try {
+    let chartData;
+    const interval = intervalMap[range];
+
+    const polygonData = await loadPolygonChart(currentCoinId, interval);
+
+    if (isCandlestick) {
+      chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
+    } else {
+      if (currentMetric === 'prices') {
+        chartData = polygonData.map(c => ({ x: c.x, y: c.c }));
+      } else if (currentMetric === 'market_caps') {
+        chartData = polygonData.map(c => ({ x: c.x, y: c.h })); // High as proxy
+      } else if (currentMetric === 'total_volumes') {
+        chartData = polygonData.map(c => ({ x: c.x, y: c.v || c.c * 1000 })); // Estimate volume if missing
+      }
+    }    
+
+    priceChart = new Chart(ctx, {
+      type: isCandlestick ? 'candlestick' : 'line',
+      data: {
+        datasets: [
+          isCandlestick
+            ? { label: 'OHLC', data: chartData, color: { up: '#26a69a', down: '#ef5350' } }
+            : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } },
+          y: { beginAtZero: false }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Chart Load Error:", err);
+    alert("Failed to load chart data.");
+  }
+}
+
+function toggleCandlestick() {
+  isCandlestick = !isCandlestick;
+  loadChart(currentRange);
+}
+
+function updateTweets(e) {
+  if (e.key === "Enter") {
+    const query = document.getElementById("tweetSearch").value.trim().toLowerCase() || "bitcoin";
+    document.getElementById("tweetTopic").innerText = query.toUpperCase();
+
+    const fallbackNitter = [
+      'https://nitter.net',
+      'https://nitter.privacydev.net',
+      'https://nitter.snopyta.org'
+    ];
+
+    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
+  }
 }
 
 const portfolio = [];
@@ -193,92 +279,6 @@ function renderPortfolio() {
     `;
     tbody.appendChild(row);
   });
-}
-
-function updateTweets(e) {
-  if (e.key === "Enter") {
-    const query = document.getElementById("tweetSearch").value.trim().toLowerCase() || "bitcoin";
-    document.getElementById("tweetTopic").innerText = query.toUpperCase();
-
-    const fallbackNitter = [
-      'https://nitter.net',
-      'https://nitter.privacydev.net',
-      'https://nitter.snopyta.org'
-    ];
-
-    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
-  }
-}
-
-async function loadPolygonChart(symbol, interval) {
-  const url = `${RENDER_BACKEND_URL}/api/polygon/${symbol}/${interval}`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return json.prices;
-}
-
-async function loadChart(range = '1D') {
-  const intervalMap = {
-    '1D': '1min',
-    '7D': '15min',
-    '1M': '1d',
-    '1Y': '7d',
-    'ALL': '30d'
-  };
-  const daysMap = {
-    '1D': '1',
-    '7D': '7',
-    '1M': '30',
-    '1Y': '365',
-    'ALL': 'max'
-  };
-  const ctx = document.getElementById("priceChart").getContext("2d");
-  if (priceChart) {
-    priceChart.destroy();
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  }  
-
-  try {
-    let chartData;
-
-    if (isCandlestick) {
-      const interval = intervalMap[range];
-      const polygonData = await loadPolygonChart(currentCoinId, interval);
-      chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
-    } else {
-      const interval = intervalMap[range];
-      const polygonData = await loadPolygonChart(currentCoinId, interval);
-      chartData = polygonData.map(c => ({ x: c.x, y: c.c }));
-    }
-
-    priceChart = new Chart(ctx, {
-      type: isCandlestick ? 'candlestick' : 'line',
-      data: {
-        datasets: [
-          isCandlestick
-            ? { label: 'OHLC', data: chartData, color: { up: '#26a69a', down: '#ef5350' } }
-            : { label: currentCoinName, data: chartData, borderColor: '#2f54eb', backgroundColor: 'rgba(47,84,235,0.1)', fill: true, tension: 0.3 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { type: 'time', time: { tooltipFormat: 'MMM dd HH:mm' } },
-          y: { beginAtZero: false }
-        }
-      }
-    });
-  } catch (err) {
-    console.error("Chart Load Error:", err);
-    alert("Failed to load chart data.");
-  }
-}
-
-function toggleCandlestick() {
-  isCandlestick = !isCandlestick;
-  loadChart(currentRange);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
