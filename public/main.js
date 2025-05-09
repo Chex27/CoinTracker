@@ -138,8 +138,8 @@ function drawSparkline(id, data) {
   });
 }
 
-function showChart(id, name) {
-  currentCoinId = id;
+function showChart(symbol, name) {
+  currentCoinId = symbol; // Use symbol, not id
   currentCoinName = name;
   document.getElementById("chartTitle").innerText = name;
   document.getElementById("chartModal").style.display = "block";
