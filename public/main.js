@@ -50,9 +50,9 @@ function renderTable(data) {
       <td><img src="${coin.image}" width="24"/></td>
       <td>${coin.name}</td>
       <td>${coin.symbol.toUpperCase()}</td>
-      <td class="${getColorClass(coin.change_1h)}">${coin.change_1h?.toFixed(2) || 'N/A'}%</td>
-      <td class="${getColorClass(coin.change_24h)}">${coin.change_24h?.toFixed(2) || 'N/A'}%</td>
-      <td class="${getColorClass(coin.change_7d)}">${coin.change_7d?.toFixed(2) || 'N/A'}%</td>
+      <td class="${getColorClass(coin.change_1h)}">${typeof coin.current_price === 'number' ? coin.current_price.toFixed(2) : 'N/A'}</td>
+      <td class="${getColorClass(coin.change_24h)}">${typeof coin.change_24h === 'number' ? coin.change_24h.toFixed(2) : 'N/A'}%</td>
+<td class="${getColorClass(coin.change_7d)}">${typeof coin.change_7d === 'number' ? coin.change_7d.toFixed(2) : 'N/A'}%</td>
       <td>$${coin.market_cap?.toLocaleString() || 'N/A'}</td>
       <td>$${coin.total_volume?.toLocaleString() || 'N/A'}</td>
       <td>${coin.circulating_supply?.toLocaleString() || 'N/A'}</td>
