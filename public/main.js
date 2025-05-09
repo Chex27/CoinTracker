@@ -44,7 +44,7 @@ function renderTable(data) {
   ).forEach(coin => {
     const tr = document.createElement("tr");
     tr.classList.add("hover-row");
-    tr.onclick = () => showChart(coin.id, coin.name);
+    tr.onclick = () => showChart(coin.symbol, coin.name);
 
     tr.innerHTML = `
       <td><img src="${coin.image}" width="24"/></td>
@@ -151,11 +151,13 @@ function closeChart() {
 }
 
 async function loadPolygonChart(symbol, interval) {
-  const url = `${RENDER_BACKEND_URL}/api/polygon/${symbol}/${interval}`;
+  const ticker = symbol.toUpperCase(); // assume it's already BTC, ETH, etc.
+  const url = `${RENDER_BACKEND_URL}/api/polygon/${ticker}/${interval}`;
   const res = await fetch(url);
   const json = await res.json();
   return json.prices;
 }
+
 
 async function loadChart(range = '1D') {
   const intervalMap = {
