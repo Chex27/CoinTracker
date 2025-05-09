@@ -68,6 +68,9 @@ app.get('/api/prices', async (req, res) => {
   try {
     const page = req.query.page || 1;
     const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
+      headers: {
+        'User-Agent': 'HBhExchange/1.0'
+      },
       params: {
         vs_currency: 'usd',
         order: 'market_cap_desc',
@@ -77,6 +80,7 @@ app.get('/api/prices', async (req, res) => {
         sparkline: true
       }
     });
+    
 
     // ✅ Patch structure for frontend compatibility
     const coins = response.data.map(c => ({
