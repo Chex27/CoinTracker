@@ -1,16 +1,18 @@
+// ✅ UPDATED server.js
 const express = require('express');
-const cors = require('cors'); // ✅ this can go up here
+const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const bodyParser = require('body-parser');
+const axios = require('axios');
 
-const app = express(); // ✅ NOW this exists
-app.use(cors());       // ✅ So this won't crash anymore
+const app = express();
+app.use(cors());
 
-const PORT = process.env.PORT || 10000; // 🔥 Render uses 10000
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -36,13 +38,11 @@ passport.deserializeUser((id, done) => {
   done(null, user || false);
 });
 
-// ✅ Auth Middleware
 function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) return next();
   res.redirect('/login');
 }
 
-// ✅ Auth Routes
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -52,11 +52,9 @@ app.post('/login', passport.authenticate('local', {
   successRedirect: '/dashboard'
 }));
 
-// ✅ Protected dashboard route
 app.get('/dashboard', isAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 
 app.get('/logout', (req, res, next) => {
   req.logout(err => {
@@ -65,12 +63,10 @@ app.get('/logout', (req, res, next) => {
   });
 });
 
-const axios = require('axios'); // You're using axios
-
+// ✅ /api/prices
 app.get('/api/prices', async (req, res) => {
   try {
     const page = req.query.page || 1;
-
     const response = await axios.get(`https://api.coingecko.com/api/v3/coins/markets`, {
       params: {
         vs_currency: 'usd',
@@ -82,15 +78,30 @@ app.get('/api/prices', async (req, res) => {
       }
     });
 
-    res.json(response.data); // ✅ Return data properly
+    // ✅ Patch structure for frontend compatibility
+    const coins = response.data.map(c => ({
+      id: c.id,
+      symbol: c.symbol,
+      name: c.name,
+      image: c.image,
+      current_price: c.current_price,
+      change_1h: c.price_change_percentage_1h_in_currency,
+      change_24h: c.price_change_percentage_24h_in_currency,
+      change_7d: c.price_change_percentage_7d_in_currency,
+      market_cap: c.market_cap,
+      total_volume: c.total_volume,
+      circulating_supply: c.circulating_supply,
+      sparkline_in_7d: c.sparkline_in_7d
+    }));
+
+    res.json(coins);
   } catch (err) {
-    console.error("Error fetching coin data:", err.message);
+    console.error("💥 CoinGecko API Error:", err?.response?.data || err.message);
     res.status(500).json({ error: 'Failed to fetch coin data' });
   }
 });
 
-
-// ✅ Polygon OHLC Endpoint
+// ✅ /api/polygon
 app.get('/api/polygon/:symbol/:interval', async (req, res) => {
   const { symbol, interval } = req.params;
   const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
@@ -116,7 +127,15 @@ app.get('/api/polygon/:symbol/:interval', async (req, res) => {
     const { data } = await axios.get(url);
     if (!data?.results) return res.status(404).json({ error: 'No data found.' });
 
-    const formatted = data.results.map(c => ({ x: c.t, o: c.o, h: c.h, l: c.l, c: c.c }));
+    const formatted = data.results.map(c => ({
+      x: c.t,
+      o: c.o,
+      h: c.h,
+      l: c.l,
+      c: c.c,
+      v: c.v
+    }));
+
     res.json({ prices: formatted });
   } catch (err) {
     console.error("Polygon API Error:", err?.response?.data || err.message);
@@ -124,23 +143,12 @@ app.get('/api/polygon/:symbol/:interval', async (req, res) => {
   }
 });
 
-// ✅ Serve index.html only for dashboard after auth
-app.get('/dashboard', isAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ✅ Always serve static files correctly
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ Catch-all fallback (optional, use with care)
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-// });
-
-// ✅ Start Server
 app.listen(PORT, () => {
   console.log(`✅ HBhExchange server running on port ${PORT}`);
 });
+
 app.use((req, res) => {
   res.status(404).send('Page not found');
 });
