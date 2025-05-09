@@ -3,6 +3,7 @@ let currentPage     = 1;
 let priceChart;
 let currentCoinId   = "bitcoin";
 let currentCoinName = "Bitcoin";
+let currentCoinSymbol = "BTC"; // or default value
 let currentRange    = '1D';
 let currentMetric   = 'prices';
 function setChartMetric(metric) {
@@ -44,7 +45,7 @@ function renderTable(data) {
   ).forEach(coin => {
     const tr = document.createElement("tr");
     tr.classList.add("hover-row");
-    tr.onclick = () => showChart(coin.symbol, coin.name);
+    tr.onclick = () => showChart(coin.id, coin.name, coin.symbol);
 
     tr.innerHTML = `
       <td><img src="${coin.image}" width="24"/></td>
@@ -138,21 +139,24 @@ function drawSparkline(id, data) {
   });
 }
 
-function showChart(symbol, name) {
-  currentCoinId = symbol; // Use symbol, not id
+function showChart(id, name, symbol) {
+  currentCoinId = id;
   currentCoinName = name;
+  currentCoinSymbol = symbol.toUpperCase();
   document.getElementById("chartTitle").innerText = name;
   document.getElementById("chartModal").style.display = "block";
   loadChart(currentRange);
 }
+
 
 function closeChart() {
   document.getElementById("chartModal").style.display = "none";
 }
 
 async function loadPolygonChart(symbol, interval) {
-  const ticker = symbol.toUpperCase(); // assume it's already BTC, ETH, etc.
+  const ticker = symbol.toUpperCase();
   const url = `${RENDER_BACKEND_URL}/api/polygon/${ticker}/${interval}`;
+  console.log("📈 Fetching chart data from:", url); // <-- Add this
   const res = await fetch(url);
   const json = await res.json();
   return json.prices;
@@ -177,7 +181,7 @@ async function loadChart(range = '1D') {
     let chartData;
     const interval = intervalMap[range];
 
-    const polygonData = await loadPolygonChart(currentCoinId, interval);
+    const polygonData = await loadPolygonChart(currentCoinSymbol, interval);
 
     if (isCandlestick) {
       chartData = polygonData.map(c => ({ x: c.x, o: c.o, h: c.h, l: c.l, c: c.c }));
