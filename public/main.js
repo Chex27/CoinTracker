@@ -16,13 +16,14 @@ let isCandlestick   = false;
 let currentSortKey  = 'market_cap';
 let sortAscending   = false;
 
-const RENDER_BACKEND_URL = "https://hbhexchange.com";
+const RENDER_BACKEND_URL = "https://hbhexchange.com"; // for prices
+const CHART_BACKEND_URL = "https://cointracker-yxmu.onrender.com"; // for charts only
 
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
 function loadCoins() {
   console.log(`Rendering coins page ${currentPage}`);
-  fetch(`/api/prices?page=${currentPage}`)
+  fetch(`${RENDER_BACKEND_URL}/api/prices?page=${currentPage}`)
     .then(res => {
       if (!res.ok) throw new Error("Network response was not ok");
       return res.json();
@@ -155,7 +156,7 @@ function closeChart() {
 
 async function loadPolygonChart(symbol, interval) {
   const ticker = symbol.toUpperCase();
-  const url = `${RENDER_BACKEND_URL}/api/polygon/${ticker}/${interval}`;
+  const url = `${CHART_BACKEND_URL}/api/polygon/${ticker}/${interval}`;
   console.log("📈 Fetching chart data from:", url); // <-- Add this
   const res = await fetch(url);
   const json = await res.json();
