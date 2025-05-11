@@ -107,6 +107,7 @@ app.get('/api/prices', async (req, res) => {
 
 // ✅ /api/polygon
 app.get('/api/polygon/:symbol/:interval', async (req, res) => {
+  console.log(`📈 Fetching Polygon chart for ${symbol} with interval ${interval}`);
   const { symbol, interval } = req.params;
   const POLYGON_API_KEY = process.env.POLYGON_API_KEY;
 
