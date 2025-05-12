@@ -289,28 +289,143 @@ function renderPortfolio() {
   });
 }
 
+
+// === Dashboard UI Enhancements ===
+
+// 1. Update marketCapMini and sparkline
+async function updateMarketCapMini() {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/global');
+    const data = await res.json();
+    const cap = data.data.total_market_cap.usd;
+    document.getElementById("marketCapMini").innerText = `$${cap.toLocaleString()}`;
+
+    // Mini sparkline (mocked for now)
+    const ctx = document.getElementById("marketCapSpark").getContext("2d");
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Array.from({length: 20}, (_, i) => i),
+        datasets: [{
+          data: Array.from({length: 20}, () => cap * (0.98 + Math.random() * 0.04)),
+          borderColor: '#2f54eb',
+          backgroundColor: 'rgba(47,84,235,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        responsive: false,
+        maintainAspectRatio: false
+      }
+    });
+  } catch (err) {
+    console.error("Failed to load market cap mini:", err);
+  }
+}
+
+// 2. Altcoin Season (static or mock)
+function setAltcoinSeason(score = 33) {
+  document.getElementById("altcoinScore").innerText = score;
+  document.getElementById("altcoinBar").style.width = `${score}%`;
+}
+
+// 3. Fear & Greed dial using canvas
+function drawFearDial(score = 70) {
+  const canvas = document.getElementById("fearDial");
+  const ctx = canvas.getContext("2d");
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height;
+  const radius = 60;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Base arc
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI);
+  ctx.strokeStyle = "#ddd";
+  ctx.lineWidth = 15;
+  ctx.stroke();
+
+  // Colored arc based on score
+  const angle = Math.PI + (score / 100) * Math.PI;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, Math.PI, angle);
+  ctx.strokeStyle = score > 60 ? "#2ecc71" : score > 30 ? "#f1c40f" : "#e74c3c";
+  ctx.lineWidth = 15;
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle = "#000";
+  ctx.font = "16px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(score, centerX, centerY - 10);
+  ctx.fillText(score > 60 ? "Greed" : score > 30 ? "Neutral" : "Fear", centerX, centerY + 12);
+}
+
+// 4. Trending Coins Grid
+async function populateTrendingCoinsGrid() {
+  try {
+    const res = await fetch("https://api.coingecko.com/api/v3/search/trending");
+    const data = await res.json();
+    const container = document.getElementById("trendingCoinsGrid");
+    container.innerHTML = "";
+    data.coins.forEach(c => {
+      const div = document.createElement("div");
+      div.style.border = "1px solid #ddd";
+      div.style.borderRadius = "8px";
+      div.style.padding = "10px";
+      div.style.background = "#fff";
+      div.style.boxShadow = "0 2px 5px rgba(0,0,0,0.05)";
+      div.style.display = "flex";
+      div.style.flexDirection = "column";
+      div.style.alignItems = "center";
+
+      div.innerHTML = `
+        <img src="${c.item.small}" width="32" height="32" />
+        <strong>${c.item.name}</strong>
+        <small>${c.item.symbol}</small>
+        <span style="color:#2f54eb;">Rank #${c.item.market_cap_rank}</span>
+      `;
+      container.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Failed to load trending coins:", err);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const { DateTime } = luxon;
   Chart._adapters._date.override({
     _id: 'luxon',
-    formats: ()=>({}),
-    parse:   v => DateTime.fromMillis(v),
-    format:  (t,f)=>DateTime.fromMillis(t).toFormat(f),
-    add:     (t,n,u)=>DateTime.fromMillis(t).plus({[u]:n}).toMillis(),
-    diff:    (a,b,u)=>DateTime.fromMillis(a).diff(DateTime.fromMillis(b),u).get(u),
-    startOf: (t,u)=>DateTime.fromMillis(t).startOf(u).toMillis(),
-    endOf:   (t,u)=>DateTime.fromMillis(t).endOf(u).toMillis()
+    formats: () => ({}),
+    parse: v => DateTime.fromMillis(v),
+    format: (t, f) => DateTime.fromMillis(t).toFormat(f),
+    add: (t, n, u) => DateTime.fromMillis(t).plus({ [u]: n }).toMillis(),
+    diff: (a, b, u) => DateTime.fromMillis(a).diff(DateTime.fromMillis(b), u).get(u),
+    startOf: (t, u) => DateTime.fromMillis(t).startOf(u).toMillis(),
+    endOf: (t, u) => DateTime.fromMillis(t).endOf(u).toMillis()
   });
 
+  // Initial Load
   loadCoins();
   loadMetrics();
   loadTrending();
   loadFearGreed();
   addSortListeners();
+  updateMarketCapMini();
+  setAltcoinSeason(33);
+  drawFearDial(70);
+  populateTrendingCoinsGrid();
 
   setInterval(loadCoins, 60_000);
+
   document.getElementById("loadMoreBtn").addEventListener("click", () => {
     currentPage++;
     loadCoins();
   });
 });
+
