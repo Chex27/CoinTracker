@@ -16,8 +16,8 @@ let isCandlestick   = false;
 let currentSortKey  = 'market_cap';
 let sortAscending   = false;
 
-const RENDER_BACKEND_URL = "https://hbhexchange.com"; // for prices
-const CHART_BACKEND_URL = "https://cointracker-yxmu.onrender.com"; // for charts only
+const RENDER_BACKEND_URL = "https://cointracker-yxmu.onrender.com"; // for prices
+const CHART_BACKEND_URL  = "https://cointracker-yxmu.onrender.com"; // for charts
 
 function getColorClass(v){ return v >= 0 ? 'positive' : 'negative'; }
 
