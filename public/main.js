@@ -232,14 +232,33 @@ function updateTweets(e) {
     document.getElementById("tweetTopic").innerText = query.toUpperCase();
 
     const fallbackNitter = [
-      'https://nitter.net',
       'https://nitter.privacydev.net',
-      'https://nitter.snopyta.org'
+      'https://nitter.poast.org',
+      'https://nitter.1d4.us',
     ];
 
-    document.getElementById("tweetIframe").src = `${fallbackNitter[0]}/search?f=tweets&q=${encodeURIComponent(query)}`;
+    const iframe = document.getElementById("tweetIframe");
+
+    // Try loading from the first available mirror
+    (function tryNext(index = 0) {
+      if (index >= fallbackNitter.length) {
+        console.error("❌ All Nitter mirrors failed.");
+        iframe.src = ""; // Clear iframe
+        return;
+      }
+
+      const url = `${fallbackNitter[index]}/search?f=tweets&q=${encodeURIComponent(query)}`;
+      iframe.src = url;
+      iframe.onload = () => console.log(`✅ Loaded tweets from: ${url}`);
+      iframe.onerror = () => {
+        console.warn(`❌ Failed to load: ${url}, trying next...`);
+        tryNext(index + 1);
+      };
+    })();
   }
 }
+
+
 
 const portfolio = [];
 
