@@ -115,10 +115,12 @@ async function loadFearGreed() {
 function drawSparkline(id, data) {
   const canvasId = `spark-${id}`;
   const canvas = document.getElementById(canvasId);
-  if (!canvas || !data || !Array.isArray(data) || data.length === 0) return;
+  if (!canvas || !Array.isArray(data) || data.length === 0) return;
 
   if (Chart.getChart(canvas)) Chart.getChart(canvas).destroy();
+
   const ctx = canvas.getContext("2d");
+  const color = data[data.length - 1] - data[0] >= 0 ? '#16c784' : '#ea3943'; // green if up, red if down
 
   new Chart(ctx, {
     type: 'line',
@@ -126,10 +128,11 @@ function drawSparkline(id, data) {
       labels: data.map((_, i) => i),
       datasets: [{
         data,
-        borderColor: '#d946ef',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.3
       }]
     },
     options: {
@@ -140,6 +143,8 @@ function drawSparkline(id, data) {
     }
   });
 }
+
+
 
 function showChart(id, name, symbol) {
   currentCoinId = id;

@@ -29,6 +29,7 @@
       max-width: 1200px;
       margin: auto;
     }
+    
     .card {
       background: #f0f5ff;
       padding: 15px;
@@ -77,6 +78,20 @@
 <body>
   <h1>HBhExchange</h1>
   <div class="container">
+<!-- View Switcher Tabs -->
+<div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px; margin-bottom: 10px;">
+  <button onclick="showSection('trendingBlock')" style="padding: 8px 16px; background: #6a5acd; color: white; border: none; border-radius: 6px;">🔥 Trending Coins</button>
+  <button onclick="showSection('dexscanBlock')" style="padding: 8px 16px; background: #6a5acd; color: white; border: none; border-radius: 6px;">📈 Trending on DexScan</button>
+  <button onclick="showSection('portfolioBlock')" style="padding: 8px 16px; background: #6a5acd; color: white; border: none; border-radius: 6px;">💼 Portfolio</button>
+</div>
+<!-- 🔥 Trending Coins -->
+<div class="card" id="trendingBlock" style="display: block;"> ... </div>
+
+<!-- 📈 DexScan -->
+<div class="card" id="dexscanBlock" style="display: none;"> ... </div>
+
+<!-- 💼 Mini Portfolio -->
+<div class="card" id="portfolioBlock" style="display: none;"> ... </div>
 
     <!-- Market Metrics -->
     <div class="card">
@@ -102,7 +117,7 @@
   <div style="flex:1; min-width:180px">
     <h4>Fear & Greed</h4>
     <canvas id="fearDial" width="140" height="100"></canvas>
-  </div>
+  </div>   
   <!-- Altcoin Season Bar -->
   <div style="flex:1; min-width:200px">
     <h4>Altcoin Season</h4>
