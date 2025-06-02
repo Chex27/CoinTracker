@@ -143,6 +143,23 @@ function drawSparkline(id, data) {
     }
   });
 }
+function showSection(sectionId) {
+  const sections = document.querySelectorAll('.section-content');
+  sections.forEach(section => section.style.display = 'none');
+  document.getElementById(sectionId).style.display = 'block';
+
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active-button');
+  });
+  const btnId = 'btn-' + sectionId.split('-')[0]; // e.g., "btn-trending"
+  document.getElementById(btnId).classList.add('active-button');
+}
+
+// Button click listeners
+document.getElementById('btn-trending').addEventListener('click', () => showSection('trending-section'));
+document.getElementById('btn-dexscan').addEventListener('click', () => showSection('dexscan-section'));
+document.getElementById('btn-portfolio').addEventListener('click', () => showSection('portfolio-section'));
+
 
 
 
@@ -350,6 +367,30 @@ async function updateMarketCapMini() {
   } catch (err) {
     console.error("Failed to load market cap mini:", err);
   }
+}
+document.getElementById('btn-trending').addEventListener('click', () => {
+  showSection('trending-coins-section');
+});
+
+document.getElementById('btn-dexscan').addEventListener('click', () => {
+  showSection('dexscan-section');
+});
+
+document.getElementById('btn-portfolio').addEventListener('click', () => {
+  showSection('portfolio-section');
+});
+
+function showSection(sectionId) {
+  const sections = document.querySelectorAll('.section-content');
+  sections.forEach(section => section.classList.add('hidden'));
+
+  document.getElementById(sectionId).classList.remove('hidden');
+
+  // Optional: highlight active button
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('active-button'); // style this class in CSS
+  });
+  document.querySelector(`[id="btn-${sectionId.split('-')[0]}"]`).classList.add('active-button');
 }
 
 // 2. Altcoin Season (static or mock)
