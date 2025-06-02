@@ -51,8 +51,12 @@ function renderTable(data) {
 
     tr.innerHTML = `
       <td><img src="${coin.image}" width="24"/></td>
-      <td>${coin.name}</td>
-      <td>${coin.symbol.toUpperCase()}</td>
+      <td style="text-align:left;">
+  <img src="${coin.image}" width="20" style="vertical-align:middle; margin-right:8px;"/>
+  <strong>${coin.name}</strong>
+  <small style="color:#888;">(${coin.symbol.toUpperCase()})</small>
+</td>
+
       <td class="${getColorClass(coin.change_1h)}">${typeof coin.current_price === 'number' ? coin.current_price.toFixed(2) : 'N/A'}</td>
       <td class="${getColorClass(coin.change_24h)}">${typeof coin.change_24h === 'number' ? coin.change_24h.toFixed(2) : 'N/A'}%</td>
 <td class="${getColorClass(coin.change_7d)}">${typeof coin.change_7d === 'number' ? coin.change_7d.toFixed(2) : 'N/A'}%</td>
@@ -89,8 +93,8 @@ function addSortListeners(){
 async function loadMetrics() {
   const res = await fetch("https://api.coingecko.com/api/v3/global");
   const json = await res.json();
-  document.getElementById("marketCap").innerText = `$${Number(json.data.total_market_cap.usd).toLocaleString()}`;
-  document.getElementById("marketCapChange").innerText = `${json.data.market_cap_change_percentage_24h_usd.toFixed(2)}%`;
+  document.getElementById("globalCap").innerText = `$${json.data.total_market_cap.usd.toLocaleString()}`;
+  document.getElementById("volume24h").innerText = `$${json.data.total_volume.usd.toLocaleString()}`;  
 }
 
 async function loadTrending() {
@@ -100,7 +104,10 @@ async function loadTrending() {
   list.innerHTML = "";
   json.coins.forEach(c => {
     const li = document.createElement("li");
-    li.innerText = `${c.item.name} (${c.item.symbol})`;
+    li.innerHTML = `
+  <img src="${c.item.small}" width="18" style="vertical-align:middle; margin-right:8px;" />
+  <strong>${c.item.name}</strong> <small>(${c.item.symbol.toUpperCase()})</small>
+`;
     list.appendChild(li);
   });
 }
@@ -143,17 +150,7 @@ function drawSparkline(id, data) {
     }
   });
 }
-function showSection(sectionId) {
-  const sections = document.querySelectorAll('.section-content');
-  sections.forEach(section => section.style.display = 'none');
-  document.getElementById(sectionId).style.display = 'block';
 
-  document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.remove('active-button');
-  });
-  const btnId = 'btn-' + sectionId.split('-')[0]; // e.g., "btn-trending"
-  document.getElementById(btnId).classList.add('active-button');
-}
 
 // Button click listeners
 document.getElementById('btn-trending').addEventListener('click', () => showSection('trending-section'));
@@ -388,7 +385,7 @@ function showSection(sectionId) {
 
   // Optional: highlight active button
   document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.remove('active-button'); // style this class in CSS
+    btn.classList.remove('active-button');
   });
   document.querySelector(`[id="btn-${sectionId.split('-')[0]}"]`).classList.add('active-button');
 }
@@ -462,6 +459,29 @@ async function populateTrendingCoinsGrid() {
     console.error("Failed to load trending coins:", err);
   }
 }
+function toggleChartView(range) {
+  currentRange = range;
+  loadChart(range);
+}
+
+function loadTopGainers() {
+  fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=5&page=1')
+    .then(res => res.json())
+    .then(data => {
+      const list = document.getElementById("gainersList");
+      list.innerHTML = "";
+      data.forEach(c => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+  <img src="${c.image}" width="18" style="vertical-align:middle; margin-right:8px;" />
+  <strong>${c.name}</strong> - $${c.current_price.toFixed(4)}
+  <span class="${getColorClass(c.price_change_percentage_24h)}">${c.price_change_percentage_24h.toFixed(2)}%</span>
+`;
+
+        list.appendChild(li);
+      });
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const { DateTime } = luxon;
@@ -476,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
     endOf: (t, u) => DateTime.fromMillis(t).endOf(u).toMillis()
   });
 
-  // Initial Load
+  // Load core data
   loadCoins();
   loadMetrics();
   loadTrending();
@@ -486,12 +506,18 @@ document.addEventListener("DOMContentLoaded", () => {
   setAltcoinSeason(33);
   drawFearDial(70);
   populateTrendingCoinsGrid();
-
+  loadTopGainers();
   setInterval(loadCoins, 60_000);
 
   document.getElementById("loadMoreBtn").addEventListener("click", () => {
     currentPage++;
     loadCoins();
   });
+
+  // ✅ MOVE THESE INSIDE
+  document.getElementById('btn-trending').addEventListener('click', () => showSection('trending-section'));
+  document.getElementById('btn-dexscan').addEventListener('click', () => showSection('dexscan-section'));
+  document.getElementById('btn-portfolio').addEventListener('click', () => showSection('portfolio-section'));
 });
+
 
